@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "np-power-tech-solar-backend",
   "version": "0.1.0",
   "description": "NP POWER TECH SOLAR - Node.js + Express REST API",
@@ -17,13 +17,7 @@
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js"
   },
-  "keywords": [
-    "solar",
-    "crm",
-    "express",
-    "postgresql",
-    "redis"
-  ],
+  "keywords": ["solar", "crm", "express", "postgresql", "redis"],
   "engines": {
     "node": ">=20.0.0"
   },
