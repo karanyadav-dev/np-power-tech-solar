@@ -1,0 +1,28 @@
+{
+  "app": {
+    "title": "NP POWER TECH SOLAR",
+    "tagline": "Power Your Future with Solar"
+  },
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "products": "Products",
+    "projects": "Projects",
+    "calculator": "Calculator",
+    "contact": "Contact",
+    "get_quote": "Get Quote"
+  },
+  "home": {
+    "hero_title": "Power Your Future with Solar",
+    "hero_subtitle": "Save on electricity bills, reduce carbon footprint, and get government subsidies.",
+    "cta_quote": "Get Free Quote",
+    "cta_calculator": "Solar Calculator",
+    "services_title": "Our Services",
+    "cta_survey": "Book Free Survey"
+  },
+  "footer": {
+    "copyright": "All rights reserved.",
+    "quick_links": "Quick Links",
+    "contact": "Contact"
+  }
+}
