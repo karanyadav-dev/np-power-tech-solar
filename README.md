@@ -12,3 +12,4 @@ Complete solar business platform — public website, lead generation, CRM, quota
 - **File Storage:** S3-compatible object storage (production) / local storage (development)
 
 ## Architecture
+

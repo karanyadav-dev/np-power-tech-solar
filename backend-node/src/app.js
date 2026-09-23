@@ -66,29 +66,14 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'np-power-tech-solar-api', time: new Date().toISOString() });
 });
 
-// API routes will be mounted here in later phases
-// app.use('/api/v1', require('./routes'));
+// ---------- API v1 Routes ----------
+app.use('/api/v1', require('./routes'));
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: { code: 'NOT_FOUND', message: `Route ${req.method} ${req.originalUrl} not found` },
-  });
-});
+// ---------- 404 handler ----------
+const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
+app.use(notFoundHandler);
 
-// Central error handler
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, _next) => {
-  logger.error({ err, url: req.originalUrl }, '[app] Unhandled error');
-  const status = err.status || 500;
-  res.status(status).json({
-    success: false,
-    error: {
-      code: err.code || 'INTERNAL_ERROR',
-      message: env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
-    },
-  });
-});
+// ---------- Central error handler ----------
+app.use(errorHandler);
 
 module.exports = app;
