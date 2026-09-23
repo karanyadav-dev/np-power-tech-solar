@@ -72,3 +72,22 @@ dist/
 *.pem
 *.key
 secrets/
+
+# ---------- Backup files (never commit) ----------
+*.backup
+*.backup.*
+*.bak
+*.broken
+*.old
+*.tmp
+*.temp
+.env.backup*
+.env.broken
+package.json.bak
+package-lock.json.bak
+
+# ---------- Log files ----------
+*.log
+logs/
+backend-node/logs/*
+!backend-node/logs/.gitkeep
