@@ -4,6 +4,10 @@ const { badRequest } = require('../utils/response');
 
 /**
  * Zod validation middleware.
+ * Usage: validate({ body: schema, query: schema, params: schema })
+ *
+ * Note: In Express 5, req.query and req.params are read-only getters.
+ * We use Object.defineProperty to override them safely.
  */
 
 function validate(schemas) {
@@ -20,8 +24,20 @@ function validate(schemas) {
           message: e.message,
         }));
         errors.push({ source: key, issues: formatted });
+        continue;
+      }
+
+      // Safe assignment — Express 5 compat
+      if (key === 'body') {
+        req.body = result.data;
       } else {
-        req[key] = result.data;
+        // For query/params, override the getter
+        Object.defineProperty(req, key, {
+          value: result.data,
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        });
       }
     }
 
