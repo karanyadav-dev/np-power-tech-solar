@@ -17,17 +17,27 @@
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js"
   },
-  "keywords": ["solar", "crm", "express", "postgresql", "redis"],
-  "engines": { "node": ">=20.0.0" },
+  "keywords": [
+    "solar",
+    "crm",
+    "express",
+    "postgresql",
+    "redis"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "argon2": "^0.45.1",
     "cors": "^2.8.6",
     "dotenv": "^18.0.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
+    "file-type": "^22.1.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",
+    "pdfkit": "^0.20.2",
     "pg": "^8.23.0",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",

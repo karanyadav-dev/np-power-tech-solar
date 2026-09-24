@@ -32,32 +32,15 @@ def public_layout(current_page: str = "/"):
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     ''')
 
-    # Add global styles for sticky footer
-    ui.add_head_html('''
-        <style>
-            body, html {
-                min-height: 100vh;
-                margin: 0;
-                display: flex;
-                flex-direction: column;
-            }
-            .nicegui-content {
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-            }
-        </style>
-    ''')
-
-    # Header (sticky top)
+    # Header (fixed top)
     header(current_page=current_page)
 
-    # Main content area — grows to fill space, pushes footer down
-    with ui.column().classes("w-full flex-grow"):
-        with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-6 gap-6") as main_container:
+    # Main content (padding-top to clear fixed header)
+    with ui.column().classes("w-full pt-16 md:pt-20"):
+        with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-6") as main_container:
             pass
 
-    # Footer (bottom of page)
+    # Footer (normal flow — appears after all content)
     footer()
 
     return main_container

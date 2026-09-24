@@ -9,6 +9,7 @@ const productRoutes = require('./product.routes');
 const userRoutes = require('./user.routes');
 const roleRoutes = require('./role.routes');
 const quotationRoutes = require('./quotation.routes');
+const uploadRoutes = require('./upload.routes');
 
 const router = express.Router();
 
@@ -32,6 +33,9 @@ router.use('/roles', roleRoutes);
 
 // ---------- Quotations ----------
 router.use('/quotations', quotationRoutes);
+
+// ---------- Uploads ----------
+router.use('/uploads', uploadRoutes);
 
 // ---------- Future modules (uncomment as implemented) ----------
 // router.use('/projects', require('./project.routes'));
