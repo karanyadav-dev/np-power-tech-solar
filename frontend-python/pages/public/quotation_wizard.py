@@ -1,10 +1,19 @@
 """
-NP POWER TECH SOLAR - Quotation Wizard (5-Step Customer Form)
+NP POWER TECH SOLAR - Quotation Wizard (7-Step Customer Form)
+Steps:
+1. Solar Requirement
+2. Customer Info
+3. Electricity Info
+4. Bill Upload (NEW)
+5. Roof Info
+6. Roof Photo Upload (NEW)
+7. Preferences + Submit
 """
 
 from nicegui import ui
 from layouts.public_layout import public_layout
 from services.quotation_service import quotation_service
+from components.upload_widget import upload_widget
 
 
 @ui.page("/quotation-request")
@@ -14,6 +23,10 @@ def quotation_wizard_page():
     # Wizard state
     state = {
         "step": 1,
+        "uploaded_files": {
+            "electricity_bills": [],
+            "roof_photos": [],
+        },
         "data": {
             "solarRequirement": {
                 "systemSizeKw": 3,
@@ -55,19 +68,19 @@ def quotation_wizard_page():
     with ui.column().classes("w-full max-w-4xl mx-auto px-4 py-8 gap-6"):
         ui.label("Request a Solar Quotation").classes("text-4xl font-bold text-gray-900")
         ui.label(
-            "Fill this 5-step form and our team will prepare a personalized quotation for you."
+            "Fill this 7-step form and our team will prepare a personalized quotation for you."
         ).classes("text-gray-600")
 
-        # Progress indicator
-        with ui.row().classes("w-full justify-between items-center gap-2 my-4"):
-            steps = ["Solar", "Contact", "Electricity", "Roof", "Preferences"]
+        # Progress indicator (7 steps)
+        with ui.row().classes("w-full justify-between items-center gap-1 my-4 flex-wrap"):
+            steps = ["Solar", "Contact", "Power", "Bill", "Roof", "Photos", "Review"]
             step_labels = []
             for i, name in enumerate(steps, 1):
-                with ui.column().classes("items-center gap-1 flex-1"):
+                with ui.column().classes("items-center gap-1 flex-1 min-w-[70px]"):
                     label = ui.label(str(i)).classes(
                         "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
                     )
-                    ui.label(name).classes("text-xs text-gray-600")
+                    ui.label(name).classes("text-xs text-gray-600 text-center")
                     step_labels.append(label)
 
         def update_progress():
@@ -79,10 +92,9 @@ def quotation_wizard_page():
                 else:
                     label.classes(replace="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm bg-gray-200 text-gray-600")
 
-        # Content area
         content = ui.column().classes("w-full gap-4")
 
-        # ---- Step 1: Solar Requirement ----
+        # ---------- Step 1: Solar Requirement ----------
         def step1():
             content.clear()
             with content:
@@ -92,156 +104,230 @@ def quotation_wizard_page():
                     value=state["data"]["solarRequirement"]["systemSizeKw"],
                     min=1, max=1000,
                 ).classes("w-full")
-
                 state["data"]["solarRequirement"]["customerType"] = ui.select(
                     ["residential", "commercial", "industrial"],
                     value=state["data"]["solarRequirement"]["customerType"],
                     label="Customer Type *",
                 ).classes("w-full")
-
                 state["data"]["solarRequirement"]["systemType"] = ui.select(
                     ["on-grid", "off-grid", "hybrid"],
                     value=state["data"]["solarRequirement"]["systemType"],
                     label="System Type *",
                 ).classes("w-full")
-
                 state["data"]["solarRequirement"]["batteryRequired"] = ui.checkbox(
                     "Battery Required?",
                     value=state["data"]["solarRequirement"]["batteryRequired"],
                 )
 
-        # ---- Step 2: Customer Info ----
+        # ---------- Step 2: Customer Info ----------
         def step2():
             content.clear()
             with content:
                 ui.label("Step 2: Your Information").classes("text-2xl font-bold")
-                state["data"]["customerInfo"]["fullName"] = ui.input("Full Name *").classes("w-full")
-                state["data"]["customerInfo"]["phone"] = ui.input("Mobile Number *").classes("w-full")
-                state["data"]["customerInfo"]["whatsapp"] = ui.input("WhatsApp Number").classes("w-full")
-                state["data"]["customerInfo"]["email"] = ui.input("Email").classes("w-full")
-                state["data"]["customerInfo"]["address"] = ui.textarea("Installation Address *").classes("w-full")
+                state["data"]["customerInfo"]["fullName"] = ui.input(
+                    "Full Name *", value=state["data"]["customerInfo"]["fullName"]
+                ).classes("w-full")
+                state["data"]["customerInfo"]["phone"] = ui.input(
+                    "Mobile Number *", value=state["data"]["customerInfo"]["phone"]
+                ).classes("w-full")
+                state["data"]["customerInfo"]["whatsapp"] = ui.input(
+                    "WhatsApp Number", value=state["data"]["customerInfo"]["whatsapp"]
+                ).classes("w-full")
+                state["data"]["customerInfo"]["email"] = ui.input(
+                    "Email", value=state["data"]["customerInfo"]["email"]
+                ).classes("w-full")
+                state["data"]["customerInfo"]["address"] = ui.textarea(
+                    "Installation Address *", value=state["data"]["customerInfo"]["address"]
+                ).classes("w-full")
                 with ui.row().classes("w-full gap-4"):
-                    state["data"]["customerInfo"]["city"] = ui.input("City *").classes("flex-1")
-                    state["data"]["customerInfo"]["state"] = ui.input("State *").classes("flex-1")
-                state["data"]["customerInfo"]["pincode"] = ui.input("Pincode *").classes("w-full")
+                    state["data"]["customerInfo"]["city"] = ui.input(
+                        "City *", value=state["data"]["customerInfo"]["city"]
+                    ).classes("flex-1")
+                    state["data"]["customerInfo"]["state"] = ui.input(
+                        "State *", value=state["data"]["customerInfo"]["state"]
+                    ).classes("flex-1")
+                state["data"]["customerInfo"]["pincode"] = ui.input(
+                    "Pincode *", value=state["data"]["customerInfo"]["pincode"]
+                ).classes("w-full")
 
-        # ---- Step 3: Electricity Info ----
+        # ---------- Step 3: Electricity Info ----------
         def step3():
             content.clear()
             with content:
                 ui.label("Step 3: Electricity Information").classes("text-2xl font-bold")
                 state["data"]["electricityInfo"]["discomName"] = ui.input(
-                    "Electricity Provider (DISCOM)"
+                    "Electricity Provider (DISCOM)",
+                    value=state["data"]["electricityInfo"]["discomName"],
                 ).classes("w-full")
                 state["data"]["electricityInfo"]["monthlyBill"] = ui.number(
-                    "Monthly Bill (₹)", min=0
+                    "Monthly Bill (₹)",
+                    value=state["data"]["electricityInfo"]["monthlyBill"] or 0,
+                    min=0,
                 ).classes("w-full")
                 state["data"]["electricityInfo"]["monthlyUnits"] = ui.number(
-                    "Monthly Units (kWh)", min=0
+                    "Monthly Units (kWh)",
+                    value=state["data"]["electricityInfo"]["monthlyUnits"] or 0,
+                    min=0,
                 ).classes("w-full")
                 state["data"]["electricityInfo"]["sanctionedLoad"] = ui.number(
-                    "Sanctioned Load (kW)", min=0
+                    "Sanctioned Load (kW)",
+                    value=state["data"]["electricityInfo"]["sanctionedLoad"] or 0,
+                    min=0,
                 ).classes("w-full")
                 state["data"]["electricityInfo"]["connectionType"] = ui.input(
-                    "Connection Type (e.g., Single Phase)"
+                    "Connection Type (e.g., Single Phase)",
+                    value=state["data"]["electricityInfo"]["connectionType"],
                 ).classes("w-full")
-                ui.label("You can upload your electricity bill later (via WhatsApp/email).").classes(
-                    "text-xs text-gray-500"
-                )
 
-        # ---- Step 4: Roof Info ----
+        # ---------- Step 4: Bill Upload (NEW) ----------
         def step4():
             content.clear()
             with content:
-                ui.label("Step 4: Roof / Site Information").classes("text-2xl font-bold")
+                ui.label("Step 4: Upload Electricity Bill").classes("text-2xl font-bold")
+                ui.label(
+                    "Optional but recommended — helps us prepare an accurate quotation."
+                ).classes("text-sm text-gray-500")
+
+                def on_bill_upload(result):
+                    url = result.get("data", {}).get("relativePath", "")
+                    if url and url not in state["uploaded_files"]["electricity_bills"]:
+                        state["uploaded_files"]["electricity_bills"].append(url)
+                    ui.notify("Bill uploaded ✅", type="positive")
+
+                upload_widget(
+                    upload_type="electricity_bills",
+                    label="📄 Upload Electricity Bill (PDF or Image)",
+                    accept="image/*,application/pdf",
+                    max_size_mb=10,
+                    on_success=on_bill_upload,
+                )
+
+        # ---------- Step 5: Roof Info ----------
+        def step5():
+            content.clear()
+            with content:
+                ui.label("Step 5: Roof / Site Information").classes("text-2xl font-bold")
                 state["data"]["roofInfo"]["roofArea"] = ui.number(
-                    "Approximate Roof Area (sq ft)", min=0
+                    "Approximate Roof Area (sq ft)",
+                    value=state["data"]["roofInfo"]["roofArea"] or 0,
+                    min=0,
                 ).classes("w-full")
                 state["data"]["roofInfo"]["roofType"] = ui.select(
                     ["RCC", "Metal Sheet", "Tiled", "Other"],
-                    value="RCC",
+                    value=state["data"]["roofInfo"]["roofType"] or "RCC",
                     label="Roof Type",
                 ).classes("w-full")
                 state["data"]["roofInfo"]["buildingType"] = ui.select(
                     ["Independent House", "Apartment", "Commercial Building", "Factory"],
-                    value="Independent House",
+                    value=state["data"]["roofInfo"]["buildingType"] or "Independent House",
                     label="Building Type",
                 ).classes("w-full")
                 state["data"]["roofInfo"]["roofOwnership"] = ui.select(
                     ["Owned", "Rented", "Leased"],
-                    value="Owned",
+                    value=state["data"]["roofInfo"]["roofOwnership"] or "Owned",
                     label="Roof Ownership",
                 ).classes("w-full")
                 state["data"]["roofInfo"]["additionalInfo"] = ui.textarea(
-                    "Additional Site Information"
+                    "Additional Site Information",
+                    value=state["data"]["roofInfo"]["additionalInfo"],
                 ).classes("w-full")
-                ui.label("Roof photos can be shared later (via WhatsApp/email).").classes(
-                    "text-xs text-gray-500"
-                )
 
-        # ---- Step 5: Preferences ----
-        def step5():
+        # ---------- Step 6: Roof Photo Upload (NEW) ----------
+        def step6():
             content.clear()
             with content:
-                ui.label("Step 5: Your Preferences").classes("text-2xl font-bold")
+                ui.label("Step 6: Upload Roof / Site Photos").classes("text-2xl font-bold")
+                ui.label(
+                    "Upload 1-3 photos of your roof/site. This helps us design the right system."
+                ).classes("text-sm text-gray-500")
+
+                def on_photo_upload(result):
+                    url = result.get("data", {}).get("relativePath", "")
+                    if url and url not in state["uploaded_files"]["roof_photos"]:
+                        state["uploaded_files"]["roof_photos"].append(url)
+                    ui.notify("Photo uploaded ✅", type="positive")
+
+                upload_widget(
+                    upload_type="roof_photos",
+                    label="🏠 Upload Roof / Site Photo",
+                    accept="image/*",
+                    max_size_mb=10,
+                    on_success=on_photo_upload,
+                )
+
+                ui.label("You can upload multiple photos one by one.").classes("text-xs text-gray-400 mt-2")
+
+        # ---------- Step 7: Preferences + Submit ----------
+        def step7():
+            content.clear()
+            with content:
+                ui.label("Step 7: Final Details").classes("text-2xl font-bold")
                 state["data"]["preferences"]["financingRequired"] = ui.checkbox(
-                    "Do you need financing/loan assistance?"
+                    "Do you need financing/loan assistance?",
+                    value=state["data"]["preferences"]["financingRequired"],
                 )
                 state["data"]["preferences"]["notes"] = ui.textarea(
-                    "Additional Notes / Requirements"
+                    "Additional Notes / Requirements",
+                    value=state["data"]["preferences"]["notes"],
                 ).classes("w-full")
 
                 ui.separator()
                 ui.label("Summary").classes("text-xl font-bold mt-4")
+
+                sol = state["data"]["solarRequirement"]
+                ci = state["data"]["customerInfo"]
+
                 with ui.column().classes("gap-1"):
-                    sol = state["data"]["solarRequirement"]
                     ui.label(f"• System Size: {sol['systemSizeKw'].value} kW")
                     ui.label(f"• Type: {sol['customerType'].value} / {sol['systemType'].value}")
                     ui.label(f"• Battery: {'Yes' if sol['batteryRequired'].value else 'No'}")
+                    ui.label(f"• Name: {ci['fullName'].value}")
+                    ui.label(f"• Phone: {ci['phone'].value}")
+                    ui.label(f"• City: {ci['city'].value}")
+                    ui.label(f"• Bill uploaded: {len(state['uploaded_files']['electricity_bills'])} file(s)")
+                    ui.label(f"• Roof photos: {len(state['uploaded_files']['roof_photos'])} file(s)")
 
-        # ---- Navigation Buttons ----
+        # ---------- Navigation ----------
         result_label = ui.label("").classes("text-sm mt-4")
 
         def go_next():
             if state["step"] == 1:
-                step2()
-                state["step"] = 2
+                step2(); state["step"] = 2
             elif state["step"] == 2:
-                # Validate customer info
                 ci = state["data"]["customerInfo"]
-                if not ci["fullName"].value or not ci["phone"].value:
-                    result_label.set_text("Please fill name and phone.")
+                if not ci["fullName"].value or not ci["phone"].value or not ci["address"].value:
+                    result_label.set_text("Please fill name, phone, and address.")
                     result_label.classes("text-red-600")
                     return
-                step3()
-                state["step"] = 3
+                step3(); state["step"] = 3
             elif state["step"] == 3:
-                step4()
-                state["step"] = 4
+                step4(); state["step"] = 4
             elif state["step"] == 4:
-                step5()
-                state["step"] = 5
+                step5(); state["step"] = 5
+            elif state["step"] == 5:
+                step6(); state["step"] = 6
+            elif state["step"] == 6:
+                step7(); state["step"] = 7
             result_label.set_text("")
             update_progress()
 
         def go_back():
             if state["step"] == 2:
-                step1()
-                state["step"] = 1
+                step1(); state["step"] = 1
             elif state["step"] == 3:
-                step2()
-                state["step"] = 2
+                step2(); state["step"] = 2
             elif state["step"] == 4:
-                step3()
-                state["step"] = 3
+                step3(); state["step"] = 3
             elif state["step"] == 5:
-                step4()
-                state["step"] = 4
+                step4(); state["step"] = 4
+            elif state["step"] == 6:
+                step5(); state["step"] = 5
+            elif state["step"] == 7:
+                step6(); state["step"] = 6
             result_label.set_text("")
             update_progress()
 
         def submit():
-            # Build payload
             sol = state["data"]["solarRequirement"]
             ci = state["data"]["customerInfo"]
             ei = state["data"]["electricityInfo"]
@@ -290,10 +376,7 @@ def quotation_wizard_page():
             if resp.get("success"):
                 qnum = resp.get("data", {}).get("quotation_number", "")
                 qid = resp.get("data", {}).get("id", "")
-                result_label.set_text(
-                    f"✅ Quotation request submitted! Reference: {qnum}. "
-                    f"Save this for your records: {qid}"
-                )
+                result_label.set_text(f"✅ Submitted! Reference: {qnum}")
                 result_label.classes("text-green-600 font-semibold")
                 ui.navigate.to(f"/quotation-status/{qid}")
             else:
@@ -306,6 +389,5 @@ def quotation_wizard_page():
             ui.button("Next →", on_click=go_next).classes("bg-yellow-500 text-white")
             ui.button("Submit", on_click=submit).classes("bg-green-500 text-white")
 
-        # Init
         step1()
         update_progress()
