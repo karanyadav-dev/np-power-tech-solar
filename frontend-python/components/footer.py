@@ -1,6 +1,6 @@
 """
 NP POWER TECH SOLAR - Footer Component
-Reusable site footer (normal flow, not fixed).
+Reusable site footer (normal flow, at bottom of content).
 """
 
 from nicegui import ui
@@ -10,9 +10,8 @@ from config.settings import settings
 def footer():
     """Render the site footer at the bottom of content (normal flow)."""
 
-    # Normal div (NOT ui.footer) so it flows naturally after content
-    with ui.column().classes(
-        "w-full bg-gray-900 text-white py-8 mt-12"
+    with ui.element("footer").classes(
+        "w-full bg-gray-900 text-white py-8 mt-auto"
     ):
         with ui.column().classes("w-full max-w-7xl mx-auto px-4 gap-6"):
             # Top row
@@ -37,10 +36,12 @@ def footer():
                     ui.label("Contact").classes("font-semibold")
                     if settings.PUBLIC_COMPANY_PHONE:
                         ui.label(f"📞 {settings.PUBLIC_COMPANY_PHONE}").classes("text-sm text-gray-400")
+                    else:
+                        ui.label("📞 Contact us").classes("text-sm text-gray-400")
                     if settings.PUBLIC_COMPANY_EMAIL:
                         ui.label(f"✉️ {settings.PUBLIC_COMPANY_EMAIL}").classes("text-sm text-gray-400")
-                    if settings.PUBLIC_COMPANY_ADDRESS:
-                        ui.label(f"📍 {settings.PUBLIC_COMPANY_ADDRESS}").classes("text-sm text-gray-400")
+                    else:
+                        ui.label("✉️ Email us").classes("text-sm text-gray-400")
 
             # Divider
             ui.separator().classes("bg-gray-700")

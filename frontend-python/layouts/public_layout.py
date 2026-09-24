@@ -11,17 +11,16 @@ from components.footer import footer
 def public_layout(current_page: str = "/"):
     """Apply public layout to the current page."""
 
-    # Header (sticky top)
+    # Header (sticky at top)
     header(current_page=current_page)
 
-    # Main content area with top padding to clear the fixed header
-    # (NiceGUI's ui.header is fixed; content needs spacing)
-    with ui.column().classes("w-full pt-20"):
-        with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-6") as main_container:
-            # Child content renders here via context
-            pass
+    # Main content area with top padding for fixed header
+    with ui.column().classes("w-full pt-20 min-h-screen"):
+        container = ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-6")
+        # Child content renders inside `container` via context
+        pass
 
-    # Footer (normal flow at bottom)
+    # Footer at bottom (normal flow)
     footer()
 
-    return main_container
+    return container
