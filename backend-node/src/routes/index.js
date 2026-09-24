@@ -8,6 +8,7 @@ const customerRoutes = require('./customer.routes');
 const productRoutes = require('./product.routes');
 const userRoutes = require('./user.routes');
 const roleRoutes = require('./role.routes');
+const quotationRoutes = require('./quotation.routes');
 
 const router = express.Router();
 
@@ -29,10 +30,12 @@ router.use('/users', userRoutes);
 // ---------- Roles ----------
 router.use('/roles', roleRoutes);
 
-// ---------- Future modules ----------
+// ---------- Quotations ----------
+router.use('/quotations', quotationRoutes);
+
+// ---------- Future modules (uncomment as implemented) ----------
 // router.use('/projects', require('./project.routes'));
 // router.use('/surveys', require('./survey.routes'));
-// router.use('/quotes', require('./quote.routes'));
 // router.use('/orders', require('./order.routes'));
 // router.use('/payments', require('./payment.routes'));
 // router.use('/invoices', require('./invoice.routes'));
