@@ -1,8 +1,10 @@
 """
-NP POWER TECH SOLAR - Admin Quotation Review
+NP POWER TECH SOLAR - Admin Quotations
+List + Detail + Review actions with new admin layout.
 """
 
 from nicegui import ui, app
+from layouts.admin_layout import admin_layout
 from services.quotation_service import quotation_service
 from services.whatsapp_service import whatsapp_service
 from config.settings import settings
@@ -11,51 +13,69 @@ from api.client import api_client
 
 @ui.page("/admin/quotations")
 def admin_quotations_list():
-    # Auth check
     token = app.storage.user.get("access_token")
     if not token:
         ui.navigate.to("/login")
         return
-
     api_client.set_token(token)
 
-    with ui.header().classes("bg-gray-900 text-white py-3"):
-        with ui.row().classes("w-full max-w-7xl mx-auto justify-between items-center px-4"):
-            with ui.row().classes("items-center gap-2"):
-                ui.icon("solar_power", size="1.5rem").classes("text-yellow-500")
-                ui.label("Quotations").classes("text-lg font-bold")
-            with ui.row().classes("gap-2"):
-                ui.button("Dashboard", on_click=lambda: ui.navigate.to("/admin/dashboard")).props("flat").classes("text-white")
-                ui.button("Logout", on_click=lambda: (app.storage.user.clear(), ui.navigate.to("/"))).props("flat").classes("text-white")
+    container = admin_layout(current_page="/admin/quotations", page_title="Quotations")
 
-    with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-6"):
-        ui.label("Quotation Requests").classes("text-3xl font-bold")
+    with container:
+        ui.label("Quotation Requests").classes("text-2xl font-bold")
+        ui.label("Review, approve, and manage customer quotations").classes("text-sm text-gray-500")
 
-        container = ui.column().classes("w-full")
+        loading = ui.label("Loading...").classes("text-gray-500")
+        quotes_container = ui.column().classes("w-full")
 
         def load():
-            container.clear()
+            quotes_container.clear()
+            loading.set_text("Loading...")
+            loading.classes("text-gray-500 text-sm")
+
             resp = quotation_service.list(limit=50)
             quotes = resp.get("data", []) if resp.get("success") else []
+            loading.set_text(f"✅ {len(quotes)} quotations found")
+            loading.classes("text-green-600 text-sm")
 
-            with container:
+            with quotes_container:
                 if not quotes:
-                    ui.label("No quotations yet.").classes("text-gray-500")
+                    ui.label("No quotations yet.").classes("text-gray-500 text-center p-8")
                     return
 
                 rows_html = ""
                 for q in quotes:
+                    qnum = q.get("quotation_number", "—")
+                    cust = q.get("customer_name", "—")
+                    city = q.get("customer_city", "—") or "—"
+                    size = q.get("system_size_kw", "—")
+                    amount = float(q.get("final_amount", 0) or 0)
+                    status = q.get("status", "—")
+                    qid = q.get("id", "")
+
+                    # Status color
+                    status_color = "bg-yellow-100 text-yellow-800"
+                    if status == "CUSTOMER_ACCEPTED":
+                        status_color = "bg-green-100 text-green-800"
+                    elif status == "CUSTOMER_REJECTED":
+                        status_color = "bg-red-100 text-red-800"
+                    elif status == "APPROVED":
+                        status_color = "bg-blue-100 text-blue-800"
+
                     rows_html += f"""
                     <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3">{q.get('quotation_number', '—')}</td>
-                        <td class="p-3">{q.get('customer_name', '—') or '—'}</td>
-                        <td class="p-3">{q.get('customer_city', '—') or '—'}</td>
-                        <td class="p-3">{q.get('system_size_kw', 0)} kW</td>
-                        <td class="p-3">{q.get('status', '—')}</td>
+                        <td class="p-3 font-mono text-xs">{qnum}</td>
+                        <td class="p-3">{cust}</td>
+                        <td class="p-3">{city}</td>
+                        <td class="p-3">{size} kW</td>
+                        <td class="p-3">₹ {amount:,.0f}</td>
                         <td class="p-3">
-                            <a href="/admin/quotation/{q.get('id', '')}"
-                               class="text-blue-600 hover:text-blue-800 no-underline">
-                               Review →
+                            <span class="px-2 py-1 rounded text-xs {status_color}">{status}</span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <a href="/admin/quotation/{qid}"
+                               class="text-blue-600 hover:text-blue-800 no-underline text-xs font-semibold">
+                                📋 Review
                             </a>
                         </td>
                     </tr>
@@ -70,8 +90,9 @@ def admin_quotations_list():
                             <th class="p-3 text-left">Customer</th>
                             <th class="p-3 text-left">City</th>
                             <th class="p-3 text-left">Size</th>
+                            <th class="p-3 text-left">Amount</th>
                             <th class="p-3 text-left">Status</th>
-                            <th class="p-3 text-left">Actions</th>
+                            <th class="p-3 text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>{rows_html}</tbody>
@@ -79,7 +100,7 @@ def admin_quotations_list():
                 </div>
                 """).classes("w-full")
 
-        ui.timer(0.1, load, once=True)
+        ui.timer(0.3, load, once=True)
 
 
 @ui.page("/admin/quotation/{quotation_id}")
@@ -88,77 +109,101 @@ def admin_quotation_detail(quotation_id: str):
     if not token:
         ui.navigate.to("/login")
         return
-
     api_client.set_token(token)
 
-    with ui.column().classes("w-full max-w-5xl mx-auto px-4 py-8 gap-6"):
-        ui.link("← Back to Quotations", "/admin/quotations").classes("text-yellow-600")
+    container = admin_layout(current_page="/admin/quotations", page_title="Quotation Detail")
 
-        container = ui.column().classes("w-full gap-4")
+    with container:
+        ui.link("← Back to Quotations", "/admin/quotations").classes("text-yellow-600 text-sm no-underline")
+
+        main = ui.column().classes("w-full gap-4 mt-2")
 
         def refresh():
-            container.clear()
+            main.clear()
             resp = quotation_service.get(quotation_id)
             if not resp.get("success"):
-                with container:
-                    ui.label("Quotation not found").classes("text-red-600")
+                with main:
+                    ui.label("Quotation not found").classes("text-red-600 text-lg")
                 return
 
             q = resp.get("data", {})
 
-            with container:
+            with main:
                 # Header
-                with ui.card().classes("w-full p-6"):
+                with ui.card().classes("w-full p-5"):
                     with ui.row().classes("w-full justify-between items-center"):
-                        ui.label(f"Quotation #{q.get('quotation_number')}").classes("text-2xl font-bold")
-                        ui.chip(q.get("status")).classes("bg-yellow-100 text-yellow-800")
+                        with ui.column().classes("gap-0"):
+                            ui.label(f"Quotation #{q.get('quotation_number')}").classes("text-2xl font-bold")
+                            ui.label(f"Created: {q.get('created_at', '')[:19]}").classes("text-xs text-gray-500")
+                        ui.chip(q.get("status", "")).classes("bg-yellow-100 text-yellow-800 text-sm")
 
-                    with ui.row().classes("gap-4 mt-2 flex-wrap"):
-                        ui.label(f"Customer: {q.get('customer_name')}").classes("text-gray-700")
-                        ui.label(f"Phone: {q.get('customer_phone')}").classes("text-gray-700")
-                        ui.label(f"City: {q.get('customer_city')}").classes("text-gray-700")
-                        ui.label(f"Pincode: {q.get('customer_pincode')}").classes("text-gray-700")
+                    ui.separator()
 
-                # Customer info
-                with ui.card().classes("w-full p-6"):
-                    ui.label("Customer Information").classes("text-xl font-bold mb-2")
-                    with ui.column().classes("gap-1"):
-                        ui.label(f"Name: {q.get('customer_name')}")
-                        ui.label(f"Phone: {q.get('customer_phone')}")
-                        ui.label(f"Email: {q.get('customer_email') or 'N/A'}")
-                        ui.label(f"Address: {q.get('customer_address')}")
+                    with ui.row().classes("gap-6 mt-2 flex-wrap"):
+                        with ui.column().classes("gap-0"):
+                            ui.label("Customer").classes("text-xs text-gray-500")
+                            ui.label(q.get("customer_name", "—")).classes("font-semibold")
+                        with ui.column().classes("gap-0"):
+                            ui.label("Phone").classes("text-xs text-gray-500")
+                            ui.label(q.get("customer_phone", "—")).classes("font-semibold")
+                        with ui.column().classes("gap-0"):
+                            ui.label("City").classes("text-xs text-gray-500")
+                            ui.label(q.get("customer_city", "—") or "—").classes("font-semibold")
+                        with ui.column().classes("gap-0"):
+                            ui.label("System Size").classes("text-xs text-gray-500")
+                            ui.label(f"{q.get('system_size_kw', '—')} kW").classes("font-semibold")
+                        with ui.column().classes("gap-0"):
+                            ui.label("Type").classes("text-xs text-gray-500")
+                            ui.label(q.get("system_type", "—") or "—").classes("font-semibold")
 
-                # Solar & system
-                with ui.card().classes("w-full p-6"):
-                    ui.label("System Requirements").classes("text-xl font-bold mb-2")
-                    ui.label(f"System Size: {q.get('system_size_kw')} kW")
-                    ui.label(f"System Type: {q.get('system_type')}")
-
-                # Items & pricing (if configured)
+                # Items
                 if q.get("items"):
-                    with ui.card().classes("w-full p-6"):
-                        ui.label("Line Items").classes("text-xl font-bold mb-2")
+                    with ui.card().classes("w-full p-5"):
+                        ui.label("Line Items").classes("text-lg font-bold mb-2")
+                        rows_html = ""
                         for it in q["items"]:
-                            with ui.row().classes("w-full justify-between border-b py-1"):
-                                ui.label(f"{it['item_name']} × {it['quantity']}")
-                                ui.label(f"₹ {it['total_price']}")
+                            rows_html += f"""
+                            <tr class="border-b">
+                                <td class="p-2">{it.get('item_name', '')}</td>
+                                <td class="p-2 text-center">{it.get('quantity', 0)}</td>
+                                <td class="p-2 text-right">₹ {float(it.get('unit_price', 0)):,.0f}</td>
+                                <td class="p-2 text-right font-semibold">₹ {float(it.get('total_price', 0)):,.0f}</td>
+                            </tr>
+                            """
+                        ui.html(f"""
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-2 text-left">Item</th>
+                                    <th class="p-2 text-center">Qty</th>
+                                    <th class="p-2 text-right">Price</th>
+                                    <th class="p-2 text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>{rows_html}</tbody>
+                        </table>
+                        """).classes("w-full")
+
                         ui.separator()
-                        ui.label(f"Subtotal: ₹ {q.get('subtotal', 0)}").classes("font-semibold")
-                        ui.label(f"Discount: ₹ {q.get('discount', 0)}")
-                        ui.label(f"GST: ₹ {q.get('gst_amount', 0)}")
-                        ui.label(f"Subsidy: ₹ {q.get('subsidy_amount', 0)}")
-                        ui.label(f"Final: ₹ {q.get('final_amount', 0)}").classes("text-2xl font-bold text-green-600")
+                        with ui.column().classes("items-end gap-1 mt-2"):
+                            ui.label(f"Subtotal: ₹ {float(q.get('subtotal', 0)):,.0f}")
+                            ui.label(f"Discount: - ₹ {float(q.get('discount', 0)):,.0f}")
+                            ui.label(f"GST: ₹ {float(q.get('gst_amount', 0)):,.0f}")
+                            ui.label(f"Subsidy: - ₹ {float(q.get('subsidy_amount', 0)):,.0f}")
+                            ui.label(f"Final Amount: ₹ {float(q.get('final_amount', 0)):,.0f}").classes(
+                                "text-xl font-bold text-green-600 mt-2"
+                            )
 
-                # ============ WhatsApp Send Section ============
+                # WhatsApp send section
                 if q.get("pdf_url"):
-                    with ui.card().classes("w-full p-6 bg-green-50"):
+                    with ui.card().classes("w-full p-5 bg-green-50 border-2 border-green-300"):
                         ui.label("📱 Send via WhatsApp").classes("text-lg font-bold text-green-800")
-                        ui.label("PDF generated hai. Customer ko WhatsApp pe bhejein:").classes("text-sm text-gray-600")
+                        ui.label("PDF generated hai. Customer ko WhatsApp pe bhejein:").classes(
+                            "text-sm text-gray-600 mt-1"
+                        )
 
-                        # Build absolute PDF URL
                         pdf_abs_url = f"{settings.BACKEND_API_BASE_URL}/api/v1/quotations/{quotation_id}/pdf/download"
 
-                        # WhatsApp link
                         wa_link = whatsapp_service.send_quotation_pdf(
                             phone=q.get("customer_phone", ""),
                             quotation_number=q.get("quotation_number", ""),
@@ -169,89 +214,81 @@ def admin_quotation_detail(quotation_id: str):
                         with ui.row().classes("gap-3 mt-3 flex-wrap"):
                             ui.button(
                                 "📱 Send on WhatsApp",
-                                on_click=lambda link=wa_link: ui.run_javascript(
-                                    f'window.open("{link}", "_blank")'
-                                ),
+                                on_click=lambda: ui.run_javascript(f'window.open("{wa_link}", "_blank")'),
                             ).classes("bg-green-500 text-white font-semibold")
 
                             ui.button(
                                 "👁️ Preview PDF",
-                                on_click=lambda url=pdf_abs_url: ui.run_javascript(
-                                    f'window.open("{url}", "_blank")'
-                                ),
+                                on_click=lambda: ui.run_javascript(f'window.open("{pdf_abs_url}", "_blank")'),
                             ).props("outline").classes("border-blue-500 text-blue-600")
 
-                            ui.button(
-                                "📋 Copy PDF Link",
-                                on_click=lambda url=pdf_abs_url: ui.run_javascript(
-                                    f'navigator.clipboard.writeText("{url}"); alert("PDF link copied!")'
-                                ),
-                            ).props("outline").classes("border-gray-500 text-gray-600")
-
-                # ============ Actions based on status ============
-                with ui.card().classes("w-full p-6"):
-                    ui.label("Actions").classes("text-xl font-bold mb-3")
-                    status = q.get("status")
-
-                    def do_action(fn, *args, label=""):
-                        try:
-                            r = fn(*args)
-                            if r.get("success"):
-                                ui.notify(f"{label} OK", type="positive")
-                                refresh()
-                            else:
-                                ui.notify(
-                                    f"{label} failed: {r.get('error', {}).get('message', '')}",
-                                    type="negative",
+                            def copy_link():
+                                ui.run_javascript(
+                                    f'navigator.clipboard.writeText("{pdf_abs_url}"); '
+                                    f'alert("Link copied: {pdf_abs_url}")'
                                 )
-                        except Exception as e:
-                            ui.notify(f"Error: {e}", type="negative")
+                            ui.button("📋 Copy Link", on_click=copy_link).props(
+                                "outline"
+                            ).classes("border-gray-500 text-gray-600")
+                else:
+                    with ui.card().classes("w-full p-5 bg-yellow-50"):
+                        ui.label("⚠️ PDF not generated yet").classes("text-yellow-800 font-semibold")
+                        ui.label("Pehle 'Generate PDF' karein, phir WhatsApp button dikhega.").classes(
+                            "text-sm text-gray-600"
+                        )
+                        ui.button(
+                            "Generate PDF",
+                            on_click=lambda: generate_pdf(),
+                        ).classes("bg-yellow-500 text-white mt-2")
+
+                # Actions
+                def do_action(fn, *args, label="Action", **kwargs):
+                    try:
+                        r = fn(*args, **kwargs)
+                        if r.get("success"):
+                            ui.notify(f"{label} ✅", type="positive")
+                            refresh()
+                        else:
+                            err = r.get("error", {}).get("message", "Failed")
+                            ui.notify(f"{err}", type="negative")
+                    except Exception as e:
+                        ui.notify(f"Error: {e}", type="negative")
+
+                def generate_pdf():
+                    r = quotation_service.generate_pdf(quotation_id)
+                    if r.get("success"):
+                        ui.notify("PDF generated ✅", type="positive")
+                        refresh()
+                    else:
+                        ui.notify("PDF generation failed", type="negative")
+
+                with ui.card().classes("w-full p-5"):
+                    ui.label("Actions").classes("text-lg font-bold mb-3")
+                    status = q.get("status")
 
                     with ui.row().classes("gap-2 flex-wrap"):
                         if status == "CUSTOMER_SUBMITTED":
-                            ui.button(
-                                "Start Review",
-                                on_click=lambda: do_action(
-                                    quotation_service.start_review, quotation_id, label="Review"
-                                ),
-                            ).classes("bg-yellow-500 text-white")
-
+                            ui.button("▶ Start Review",
+                                      on_click=lambda: do_action(quotation_service.start_review, quotation_id, label="Review started")
+                                      ).classes("bg-yellow-500 text-white")
                         if status == "ADMIN_REVIEW":
-                            ui.button(
-                                "Verify Info",
-                                on_click=lambda: do_action(
-                                    quotation_service.verify_info, quotation_id, label="Verify"
-                                ),
-                            ).classes("bg-green-500 text-white")
-
+                            ui.button("✅ Verify Info",
+                                      on_click=lambda: do_action(quotation_service.verify_info, quotation_id, label="Verified")
+                                      ).classes("bg-green-500 text-white")
                         if status == "VERIFIED":
-                            ui.button(
-                                "Configure Pricing",
-                                on_click=lambda: ui.navigate.to(f"/admin/quotation/{quotation_id}/pricing"),
-                            ).classes("bg-blue-500 text-white")
-
+                            ui.button("💰 Configure Pricing",
+                                      on_click=lambda: ui.navigate.to(f"/admin/quotation/{quotation_id}/pricing")
+                                      ).classes("bg-blue-500 text-white")
                         if status == "PENDING_APPROVAL":
-                            ui.button(
-                                "Approve",
-                                on_click=lambda: do_action(
-                                    quotation_service.approve, quotation_id, label="Approve"
-                                ),
-                            ).classes("bg-green-600 text-white")
-
+                            ui.button("✅ Approve",
+                                      on_click=lambda: do_action(quotation_service.approve, quotation_id, label="Approved")
+                                      ).classes("bg-green-600 text-white")
                         if status == "APPROVED":
-                            ui.button(
-                                "Generate PDF",
-                                on_click=lambda: do_action(
-                                    quotation_service.generate_pdf, quotation_id, label="PDF"
-                                ),
-                            ).classes("bg-purple-500 text-white")
-
+                            ui.button("📄 Generate PDF", on_click=generate_pdf
+                                      ).classes("bg-purple-500 text-white")
                         if status == "PDF_GENERATED":
-                            ui.button(
-                                "Send to Customer",
-                                on_click=lambda: do_action(
-                                    quotation_service.send_to_customer, quotation_id, label="Send"
-                                ),
-                            ).classes("bg-orange-500 text-white")
+                            ui.button("📤 Send to Customer",
+                                      on_click=lambda: do_action(quotation_service.send_to_customer, quotation_id, label="Sent")
+                                      ).classes("bg-orange-500 text-white")
 
-        ui.timer(0.1, refresh, once=True)
+        ui.timer(0.3, refresh, once=True)
