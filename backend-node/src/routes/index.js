@@ -10,6 +10,12 @@ const userRoutes = require('./user.routes');
 const roleRoutes = require('./role.routes');
 const quotationRoutes = require('./quotation.routes');
 const uploadRoutes = require('./upload.routes');
+const reviewRoutes = require('./review.routes');
+const settingRoutes = require('./setting.routes');
+
+/**
+ * API v1 router — mounts all module routes.
+ */
 
 const router = express.Router();
 
@@ -37,6 +43,12 @@ router.use('/quotations', quotationRoutes);
 // ---------- Uploads ----------
 router.use('/uploads', uploadRoutes);
 
+// ---------- Reviews ----------
+router.use('/reviews', reviewRoutes);
+
+// ---------- Settings ----------
+router.use('/settings', settingRoutes);
+
 // ---------- Future modules (uncomment as implemented) ----------
 // router.use('/projects', require('./project.routes'));
 // router.use('/surveys', require('./survey.routes'));
@@ -50,7 +62,6 @@ router.use('/uploads', uploadRoutes);
 // router.use('/service', require('./service.routes'));
 // router.use('/pincode', require('./pincode.routes'));
 // router.use('/subsidy', require('./subsidy.routes'));
-// router.use('/reviews', require('./review.routes'));
 // router.use('/blog', require('./blog.routes'));
 // router.use('/notifications', require('./notification.routes'));
 // router.use('/analytics', require('./analytics.routes'));
