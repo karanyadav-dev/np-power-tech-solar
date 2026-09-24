@@ -5,6 +5,7 @@ from .product_service import product_service
 from .quotation_service import quotation_service
 from .admin_service import admin_service
 from .review_service import review_service
+from .whatsapp_service import whatsapp_service
 
 __all__ = [
     "lead_service",
@@ -13,4 +14,5 @@ __all__ = [
     "quotation_service",
     "admin_service",
     "review_service",
+    "whatsapp_service",
 ]

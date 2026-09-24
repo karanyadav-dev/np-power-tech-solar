@@ -4,6 +4,8 @@ NP POWER TECH SOLAR - Admin Quotation Review
 
 from nicegui import ui, app
 from services.quotation_service import quotation_service
+from services.whatsapp_service import whatsapp_service
+from config.settings import settings
 from api.client import api_client
 
 
@@ -41,23 +43,41 @@ def admin_quotations_list():
                     ui.label("No quotations yet.").classes("text-gray-500")
                     return
 
-                columns = [
-                    {"name": "quotation_number", "label": "Quotation #", "field": "quotation_number", "align": "left"},
-                    {"name": "customer_name", "label": "Customer", "field": "customer_name", "align": "left"},
-                    {"name": "customer_city", "label": "City", "field": "customer_city", "align": "left"},
-                    {"name": "system_size_kw", "label": "Size (kW)", "field": "system_size_kw", "align": "left"},
-                    {"name": "status", "label": "Status", "field": "status", "align": "left"},
-                    {"name": "actions", "label": "Actions", "field": "id", "align": "left"},
-                ]
-                rows = [{"id": q["id"], **q} for q in quotes]
-                table = ui.table(columns=columns, rows=rows, row_key="id").classes("w-full")
+                rows_html = ""
+                for q in quotes:
+                    rows_html += f"""
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">{q.get('quotation_number', '—')}</td>
+                        <td class="p-3">{q.get('customer_name', '—') or '—'}</td>
+                        <td class="p-3">{q.get('customer_city', '—') or '—'}</td>
+                        <td class="p-3">{q.get('system_size_kw', 0)} kW</td>
+                        <td class="p-3">{q.get('status', '—')}</td>
+                        <td class="p-3">
+                            <a href="/admin/quotation/{q.get('id', '')}"
+                               class="text-blue-600 hover:text-blue-800 no-underline">
+                               Review →
+                            </a>
+                        </td>
+                    </tr>
+                    """
 
-                table.add_slot("body-cell-actions", r"""
-                    <q-td :props="props">
-                        <q-btn dense color="primary" label="Review"
-                               :href="'/admin/quotation/' + props.row.id" />
-                    </q-td>
-                """)
+                ui.html(f"""
+                <div class="overflow-x-auto">
+                <table class="w-full bg-white rounded-lg shadow">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-3 text-left">Quotation #</th>
+                            <th class="p-3 text-left">Customer</th>
+                            <th class="p-3 text-left">City</th>
+                            <th class="p-3 text-left">Size</th>
+                            <th class="p-3 text-left">Status</th>
+                            <th class="p-3 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>{rows_html}</tbody>
+                </table>
+                </div>
+                """).classes("w-full")
 
         ui.timer(0.1, load, once=True)
 
@@ -93,7 +113,7 @@ def admin_quotation_detail(quotation_id: str):
                         ui.label(f"Quotation #{q.get('quotation_number')}").classes("text-2xl font-bold")
                         ui.chip(q.get("status")).classes("bg-yellow-100 text-yellow-800")
 
-                    with ui.row().classes("gap-4 mt-2"):
+                    with ui.row().classes("gap-4 mt-2 flex-wrap"):
                         ui.label(f"Customer: {q.get('customer_name')}").classes("text-gray-700")
                         ui.label(f"Phone: {q.get('customer_phone')}").classes("text-gray-700")
                         ui.label(f"City: {q.get('customer_city')}").classes("text-gray-700")
@@ -129,7 +149,46 @@ def admin_quotation_detail(quotation_id: str):
                         ui.label(f"Subsidy: ₹ {q.get('subsidy_amount', 0)}")
                         ui.label(f"Final: ₹ {q.get('final_amount', 0)}").classes("text-2xl font-bold text-green-600")
 
-                # Actions based on status
+                # ============ WhatsApp Send Section ============
+                if q.get("pdf_url"):
+                    with ui.card().classes("w-full p-6 bg-green-50"):
+                        ui.label("📱 Send via WhatsApp").classes("text-lg font-bold text-green-800")
+                        ui.label("PDF generated hai. Customer ko WhatsApp pe bhejein:").classes("text-sm text-gray-600")
+
+                        # Build absolute PDF URL
+                        pdf_abs_url = f"{settings.BACKEND_API_BASE_URL}/api/v1/quotations/{quotation_id}/pdf/download"
+
+                        # WhatsApp link
+                        wa_link = whatsapp_service.send_quotation_pdf(
+                            phone=q.get("customer_phone", ""),
+                            quotation_number=q.get("quotation_number", ""),
+                            pdf_url=pdf_abs_url,
+                            amount=float(q.get("final_amount", 0) or 0),
+                        )
+
+                        with ui.row().classes("gap-3 mt-3 flex-wrap"):
+                            ui.button(
+                                "📱 Send on WhatsApp",
+                                on_click=lambda link=wa_link: ui.run_javascript(
+                                    f'window.open("{link}", "_blank")'
+                                ),
+                            ).classes("bg-green-500 text-white font-semibold")
+
+                            ui.button(
+                                "👁️ Preview PDF",
+                                on_click=lambda url=pdf_abs_url: ui.run_javascript(
+                                    f'window.open("{url}", "_blank")'
+                                ),
+                            ).props("outline").classes("border-blue-500 text-blue-600")
+
+                            ui.button(
+                                "📋 Copy PDF Link",
+                                on_click=lambda url=pdf_abs_url: ui.run_javascript(
+                                    f'navigator.clipboard.writeText("{url}"); alert("PDF link copied!")'
+                                ),
+                            ).props("outline").classes("border-gray-500 text-gray-600")
+
+                # ============ Actions based on status ============
                 with ui.card().classes("w-full p-6"):
                     ui.label("Actions").classes("text-xl font-bold mb-3")
                     status = q.get("status")
@@ -141,28 +200,58 @@ def admin_quotation_detail(quotation_id: str):
                                 ui.notify(f"{label} OK", type="positive")
                                 refresh()
                             else:
-                                ui.notify(f"{label} failed: {r.get('error', {}).get('message', '')}", type="negative")
+                                ui.notify(
+                                    f"{label} failed: {r.get('error', {}).get('message', '')}",
+                                    type="negative",
+                                )
                         except Exception as e:
                             ui.notify(f"Error: {e}", type="negative")
 
                     with ui.row().classes("gap-2 flex-wrap"):
                         if status == "CUSTOMER_SUBMITTED":
-                            ui.button("Start Review",
-                                      on_click=lambda: do_action(quotation_service.start_review, quotation_id, label="Review")).classes("bg-yellow-500 text-white")
+                            ui.button(
+                                "Start Review",
+                                on_click=lambda: do_action(
+                                    quotation_service.start_review, quotation_id, label="Review"
+                                ),
+                            ).classes("bg-yellow-500 text-white")
+
                         if status == "ADMIN_REVIEW":
-                            ui.button("Verify Info",
-                                      on_click=lambda: do_action(quotation_service.verify_info, quotation_id, label="Verify")).classes("bg-green-500 text-white")
+                            ui.button(
+                                "Verify Info",
+                                on_click=lambda: do_action(
+                                    quotation_service.verify_info, quotation_id, label="Verify"
+                                ),
+                            ).classes("bg-green-500 text-white")
+
                         if status == "VERIFIED":
-                            ui.button("Configure Pricing",
-                                      on_click=lambda: ui.navigate.to(f"/admin/quotation/{quotation_id}/pricing")).classes("bg-blue-500 text-white")
+                            ui.button(
+                                "Configure Pricing",
+                                on_click=lambda: ui.navigate.to(f"/admin/quotation/{quotation_id}/pricing"),
+                            ).classes("bg-blue-500 text-white")
+
                         if status == "PENDING_APPROVAL":
-                            ui.button("Approve",
-                                      on_click=lambda: do_action(quotation_service.approve, quotation_id, label="Approve")).classes("bg-green-600 text-white")
+                            ui.button(
+                                "Approve",
+                                on_click=lambda: do_action(
+                                    quotation_service.approve, quotation_id, label="Approve"
+                                ),
+                            ).classes("bg-green-600 text-white")
+
                         if status == "APPROVED":
-                            ui.button("Mark PDF Generated",
-                                      on_click=lambda: do_action(quotation_service.mark_pdf_generated, quotation_id, label="PDF")).classes("bg-purple-500 text-white")
+                            ui.button(
+                                "Generate PDF",
+                                on_click=lambda: do_action(
+                                    quotation_service.generate_pdf, quotation_id, label="PDF"
+                                ),
+                            ).classes("bg-purple-500 text-white")
+
                         if status == "PDF_GENERATED":
-                            ui.button("Send to Customer",
-                                      on_click=lambda: do_action(quotation_service.send_to_customer, quotation_id, label="Send")).classes("bg-orange-500 text-white")
+                            ui.button(
+                                "Send to Customer",
+                                on_click=lambda: do_action(
+                                    quotation_service.send_to_customer, quotation_id, label="Send"
+                                ),
+                            ).classes("bg-orange-500 text-white")
 
         ui.timer(0.1, refresh, once=True)
