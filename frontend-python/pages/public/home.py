@@ -8,11 +8,12 @@ from config.settings import settings
 from services.product_service import product_service
 from components.whatsapp_button import whatsapp_button
 from components.before_after_slider import simple_before_after
+from components.service_areas import service_areas_section, contact_map_section
 
 
 def _hero_section():
-    with ui.row().classes("w-full items-center justify-between gap-8 flex-wrap"):
-        with ui.column().classes("gap-4 flex-1 min-w-[300px]"):
+    with ui.row().classes("w-full items-center justify-between gap-8 flex-wrap solar-hero"):
+        with ui.column().classes("gap-4 flex-1 min-w-[300px] fade-in"):
             ui.label("Power Your Future with Solar").classes(
                 "text-5xl font-bold text-gray-900 leading-tight"
             )
@@ -22,15 +23,20 @@ def _hero_section():
             ).classes("text-lg text-gray-600")
 
             with ui.row().classes("gap-4 mt-4 flex-wrap"):
-                ui.button("Get Free Quote", on_click=lambda: ui.navigate.to("/get-quote")).classes(
-                    "bg-yellow-500 text-white font-semibold px-6 py-3"
-                )
-                ui.button("Solar Calculator", on_click=lambda: ui.navigate.to("/calculator")).props(
-                    "outline"
-                ).classes("border-yellow-500 text-yellow-600 px-6 py-3")
-                ui.button("Call Now", on_click=lambda: ui.navigate.to("/contact")).props(
-                    "flat"
-                ).classes("text-gray-700")
+                ui.button(
+                    "Get Free Quote",
+                    on_click=lambda: ui.navigate.to("/get-quote"),
+                ).classes("solar-btn-primary")
+
+                ui.button(
+                    "Solar Calculator",
+                    on_click=lambda: ui.navigate.to("/calculator"),
+                ).props("outline").classes("border-yellow-500 text-yellow-600 px-6 py-3")
+
+                ui.button(
+                    "Call Now",
+                    on_click=lambda: ui.navigate.to("/contact"),
+                ).props("flat").classes("text-gray-700")
 
         with ui.column().classes("flex-1 min-w-[300px] items-center"):
             ui.icon("solar_power", size="14rem").classes("text-yellow-400")
@@ -51,8 +57,8 @@ def _trust_badges():
 
 
 def _services_section():
-    ui.label("Our Services").classes("text-3xl font-bold text-gray-900")
-    ui.label("Complete solar solutions for every need").classes("text-gray-600")
+    ui.label("Our Services").classes("solar-section-title")
+    ui.label("Complete solar solutions for every need").classes("text-gray-600 mt-4")
 
     services = [
         ("Residential Solar", "Home rooftop systems from 1kW to 10kW.", "home", "/residential"),
@@ -64,7 +70,7 @@ def _services_section():
     with ui.row().classes("w-full gap-6 flex-wrap mt-4"):
         for title, desc, icon, link in services:
             with ui.card().classes(
-                "flex-1 min-w-[250px] p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                "flex-1 min-w-[250px] p-6 solar-card cursor-pointer"
             ).on("click", lambda l=link: ui.navigate.to(l)):
                 ui.icon(icon, size="3rem").classes("text-yellow-500")
                 ui.label(title).classes("text-xl font-semibold text-gray-900 mt-2")
@@ -72,8 +78,8 @@ def _services_section():
 
 
 def _products_section():
-    ui.label("Featured Products").classes("text-3xl font-bold text-gray-900 mt-6")
-    ui.label("High-quality solar products from trusted brands").classes("text-gray-600")
+    ui.label("Featured Products").classes("solar-section-title")
+    ui.label("High-quality solar products from trusted brands").classes("text-gray-600 mt-4")
 
     loading = ui.row().classes("w-full justify-center py-6")
     with loading:
@@ -88,14 +94,13 @@ def _products_section():
 
         with container:
             if not products:
-                # Show placeholder products
                 placeholders = [
                     ("Adani 540W Mono Panel", "540W", "₹ 13,500"),
                     ("Luminous 5kW Inverter", "5 kW", "₹ 45,000"),
                     ("Exide 150Ah Battery", "150 Ah", "₹ 12,000"),
                 ]
                 for name, cap, price in placeholders:
-                    with ui.card().classes("w-72 p-4"):
+                    with ui.card().classes("w-72 p-4 solar-card"):
                         ui.label("Sample").classes("text-xs text-yellow-600 font-semibold")
                         ui.label(name).classes("text-lg font-bold text-gray-900")
                         ui.label(cap).classes("text-gray-500 text-sm")
@@ -103,7 +108,7 @@ def _products_section():
                 return
 
             for p in products:
-                with ui.card().classes("w-72 p-4 hover:shadow-lg transition-shadow"):
+                with ui.card().classes("w-72 p-4 solar-card"):
                     ui.label(p.get("brand") or "Product").classes(
                         "text-xs text-yellow-600 font-semibold"
                     )
@@ -118,13 +123,14 @@ def _products_section():
 
 
 def _before_after_section():
-    ui.label("See the Transformation").classes("text-3xl font-bold text-gray-900 mt-6")
-    ui.label("Real installations by our team").classes("text-gray-600")
+    ui.label("See the Transformation").classes("solar-section-title")
+    ui.label("Real installations by our team").classes("text-gray-600 mt-4")
     simple_before_after()
 
 
 def _why_choose_us():
-    ui.label("Why Choose Us?").classes("text-3xl font-bold text-gray-900 mt-6")
+    ui.label("Why Choose Us?").classes("solar-section-title")
+    ui.label("Trusted by hundreds of customers across India").classes("text-gray-600 mt-4")
 
     points = [
         ("workspace_premium", "MNRE Certified", "Government-approved installers"),
@@ -137,14 +143,15 @@ def _why_choose_us():
 
     with ui.row().classes("w-full gap-4 flex-wrap mt-4"):
         for icon, title, desc in points:
-            with ui.card().classes("flex-1 min-w-[200px] p-5"):
+            with ui.card().classes("flex-1 min-w-[200px] p-5 solar-card"):
                 ui.icon(icon, size="2.5rem").classes("text-yellow-500")
                 ui.label(title).classes("text-lg font-semibold mt-2")
                 ui.label(desc).classes("text-gray-600 text-sm mt-1")
 
 
 def _installation_process():
-    ui.label("How It Works").classes("text-3xl font-bold text-gray-900 mt-6")
+    ui.label("How It Works").classes("solar-section-title")
+    ui.label("From enquiry to installation in 5 simple steps").classes("text-gray-600 mt-4")
 
     steps = [
         ("1", "Free Site Survey", "Our team visits your site and assesses roof, load, and requirements."),
@@ -156,7 +163,7 @@ def _installation_process():
 
     with ui.row().classes("w-full gap-4 flex-wrap mt-4"):
         for num, title, desc in steps:
-            with ui.card().classes("flex-1 min-w-[220px] p-5"):
+            with ui.card().classes("flex-1 min-w-[220px] p-5 solar-card"):
                 ui.label(num).classes(
                     "text-4xl font-bold text-yellow-500 bg-yellow-50 rounded-full "
                     "w-12 h-12 flex items-center justify-center"
@@ -166,52 +173,35 @@ def _installation_process():
 
 
 def _reviews_section():
-    ui.label("What Our Customers Say").classes("text-3xl font-bold text-gray-900 mt-6")
+    ui.label("What Our Customers Say").classes("solar-section-title")
+    ui.label("Real feedback from happy solar owners").classes("text-gray-600 mt-4")
 
     reviews = [
         ("Rajesh Kumar", "Delhi", 5, "Excellent service! My electricity bill came down by 90% in the first month itself."),
         ("Priya Sharma", "Mumbai", 5, "Professional team, completed installation in 4 days. Highly recommended!"),
         ("Amit Patel", "Pune", 4, "Good quality panels and honest pricing. Subsidy help was very useful."),
+        ("Sunita Verma", "Bengaluru", 5, "Best decision for my home. Team handled everything from survey to net metering."),
     ]
 
     with ui.row().classes("w-full gap-4 flex-wrap mt-4"):
         for name, location, rating, text in reviews:
-            with ui.card().classes("flex-1 min-w-[280px] p-5"):
-                with ui.row().classes("items-center gap-2"):
+            with ui.card().classes("flex-1 min-w-[280px] p-5 solar-card"):
+                with ui.row().classes("items-center gap-3"):
+                    with ui.element("div").classes(
+                        "w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center"
+                    ):
+                        ui.icon("person", size="1.5rem").classes("text-yellow-600")
+                    with ui.column().classes("gap-0"):
+                        ui.label(name).classes("font-semibold text-gray-900")
+                        ui.label(location).classes("text-xs text-gray-500")
+
+                with ui.row().classes("mt-3"):
                     for _ in range(rating):
-                        ui.icon("star", size="1.2rem").classes("text-yellow-500")
+                        ui.icon("star", size="1.1rem").classes("text-yellow-500")
                     for _ in range(5 - rating):
-                        ui.icon("star_border", size="1.2rem").classes("text-gray-300")
-                ui.label(f'"{text}"').classes("text-gray-700 italic mt-3")
-                ui.label(f"— {name}, {location}").classes("text-sm text-gray-500 mt-2")
+                        ui.icon("star_border", size="1.1rem").classes("text-gray-300")
 
-
-def _service_areas():
-    ui.label("Service Areas").classes("text-3xl font-bold text-gray-900 mt-6")
-    ui.label("We serve these major cities and surrounding areas").classes("text-gray-600")
-
-    cities = ["Delhi NCR", "Mumbai", "Pune", "Bengaluru", "Hyderabad", "Chennai", "Ahmedabad", "Jaipur"]
-
-    with ui.row().classes("w-full gap-3 flex-wrap mt-4"):
-        for city in cities:
-            ui.chip(city, icon="location_on").classes("bg-yellow-50 text-yellow-700")
-
-
-def _faq_preview():
-    ui.label("Frequently Asked Questions").classes("text-3xl font-bold text-gray-900 mt-6")
-
-    faqs = [
-        ("How much does a solar system cost?", "A typical 3kW residential system costs ₹1.5-1.8 lakhs before subsidy."),
-        ("What subsidy can I get?", "Up to ₹78,000 under PM Surya Ghar scheme for residential systems."),
-        ("How much roof area is needed?", "Approximately 100 sq. ft. per kW of system capacity."),
-    ]
-
-    with ui.column().classes("w-full gap-2 mt-4"):
-        for q, a in faqs:
-            with ui.expansion(q).classes("w-full border rounded"):
-                ui.label(a).classes("text-gray-600 p-3")
-
-    ui.link("View all FAQs →", "/faq").classes("text-yellow-600 font-semibold mt-3")
+                ui.label(f'"{text}"').classes("text-gray-600 italic mt-3 text-sm leading-relaxed")
 
 
 def _final_cta():
@@ -223,12 +213,14 @@ def _final_cta():
             "text-white mt-2"
         )
         with ui.row().classes("gap-4 mt-4"):
-            ui.button("Book Free Survey", on_click=lambda: ui.navigate.to("/site-survey")).classes(
-                "bg-white text-yellow-600 font-semibold px-6 py-3"
-            )
-            ui.button("Get Quote", on_click=lambda: ui.navigate.to("/get-quote")).classes(
-                "bg-gray-900 text-white font-semibold px-6 py-3"
-            )
+            ui.button(
+                "Book Free Survey",
+                on_click=lambda: ui.navigate.to("/site-survey"),
+            ).classes("bg-white text-yellow-600 font-semibold px-6 py-3")
+            ui.button(
+                "Get Quote",
+                on_click=lambda: ui.navigate.to("/get-quote"),
+            ).classes("bg-gray-900 text-white font-semibold px-6 py-3")
 
 
 @ui.page("/")
@@ -256,7 +248,7 @@ def home_page():
         ui.separator()
         _reviews_section()
         ui.separator()
-        _service_areas()
+        service_areas_section()
         ui.separator()
-        _faq_preview()
+        contact_map_section()
         _final_cta()

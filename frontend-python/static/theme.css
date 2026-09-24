@@ -1,0 +1,132 @@
+/* ============================================
+   NP POWER TECH SOLAR - Custom Theme
+   ============================================ */
+
+:root {
+  --solar-yellow: #F59E0B;
+  --solar-orange: #EA580C;
+  --solar-dark: #1F2937;
+  --solar-gray: #6B7280;
+  --solar-light: #FEF3C7;
+}
+
+/* ---------- Body ---------- */
+body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+  color: #1F2937;
+  scroll-behavior: smooth;
+}
+
+/* ---------- Headings ---------- */
+h1, h2, h3, h4 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Buttons ---------- */
+.solar-btn-primary {
+  background: linear-gradient(135deg, #F59E0B, #EA580C);
+  color: white;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  border: none;
+  cursor: pointer;
+}
+
+.solar-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+}
+
+/* ---------- Cards ---------- */
+.solar-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 1px solid #F3F4F6;
+}
+
+.solar-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: #FCD34D;
+}
+
+/* ---------- Hero ---------- */
+.solar-hero {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FFFFFF 100%);
+  padding: 80px 20px;
+  border-radius: 16px;
+}
+
+/* ---------- Section title ---------- */
+.solar-section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1F2937;
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.solar-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #F59E0B, #EA580C);
+  border-radius: 2px;
+}
+
+/* ---------- Chips ---------- */
+.solar-chip {
+  background: #FEF3C7;
+  color: #92400E;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ---------- Smooth fade-in ---------- */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .solar-hero {
+    padding: 40px 16px;
+  }
+  .solar-section-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* ---------- WhatsApp button pulse ---------- */
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  50% { box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+}
+
+.whatsapp-pulse {
+  animation: pulse 2s infinite;
+}

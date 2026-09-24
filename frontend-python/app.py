@@ -5,63 +5,49 @@ Main application entry point.
 
 from nicegui import ui, app
 
-# ============================================================
-# Import all pages (register routes via @ui.page decorator)
-# ============================================================
-
-# ---------- Public pages ----------
-from pages.public import home               # → /
-from pages.public import about              # → /about
-from pages.public import services           # → /services
-from pages.public import products           # → /products
-from pages.public import projects           # → /projects
-from pages.public import contact            # → /contact
-from pages.public import get_quote          # → /get-quote
-from pages.public import solar_calculator   # → /calculator
-from pages.public import faq                # → /faq
-from pages.public import residential        # → /residential
-from pages.public import commercial         # → /commercial
-from pages.public import industrial         # → /industrial
-from pages.public import on_grid            # → /on-grid
-from pages.public import off_grid           # → /off-grid
-from pages.public import hybrid             # → /hybrid
-from pages.public import subsidy            # → /subsidy
-from pages.public import pincode_check      # → /pincode-check
-from pages.public import reviews            # → /reviews
-from pages.public import blog               # → /blog
-from pages.public import privacy_policy     # → /privacy-policy
-from pages.public import terms as terms_page  # → /terms
-
-# ---------- Auth pages ----------
-from pages.auth import login                # → /login
-
-# ---------- Admin pages ----------
-from pages.admin import dashboard           # → /admin/dashboard
+# ---------- Import all pages (register routes) ----------
+from pages.public import home            # noqa: F401  → /
+from pages.public import about           # noqa: F401  → /about
+from pages.public import services        # noqa: F401  → /services
+from pages.public import products        # noqa: F401  → /products
+from pages.public import projects        # noqa: F401  → /projects
+from pages.public import contact         # noqa: F401  → /contact
+from pages.public import get_quote       # noqa: F401  → /get-quote
+from pages.public import solar_calculator  # noqa: F401  → /calculator
+from pages.public import faq             # noqa: F401  → /faq
+from pages.public import residential     # noqa: F401  → /residential
+from pages.public import commercial      # noqa: F401  → /commercial
+from pages.public import industrial      # noqa: F401  → /industrial
+from pages.public import on_grid         # noqa: F401  → /on-grid
+from pages.public import off_grid        # noqa: F401  → /off-grid
+from pages.public import hybrid          # noqa: F401  → /hybrid
+from pages.public import subsidy         # noqa: F401  → /subsidy
+from pages.public import pincode_check   # noqa: F401  → /pincode-check
+from pages.public import reviews         # noqa: F401  → /reviews
+from pages.public import blog            # noqa: F401  → /blog
+from pages.public import privacy_policy  # noqa: F401  → /privacy-policy
+from pages.public import terms as terms_page  # noqa: F401  → /terms
+from pages.auth import login             # noqa: F401  → /login
+from pages.admin import dashboard        # noqa: F401  → /admin/dashboard
 
 
-# ============================================================
-# Placeholder pages (to be built in future phases)
-# ============================================================
-
+# ---------- Placeholder pages (polish pending) ----------
 @ui.page("/site-survey")
 def site_survey():
     from layouts.public_layout import public_layout
     public_layout(current_page="/site-survey")
     with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-4"):
         ui.label("Book Site Survey").classes("text-4xl font-bold")
-        ui.label("Coming soon — full booking form will be added.").classes("text-gray-600")
-        ui.button("Get Quote Instead", on_click=lambda: ui.navigate.to("/get-quote")).classes(
-            "bg-yellow-500 text-white mt-4"
-        )
+        ui.label("Coming soon...").classes("text-gray-600")
 
 
-@ui.page("/service")
-def service():
+@ui.page("/warranty")
+def warranty():
     from layouts.public_layout import public_layout
-    public_layout(current_page="/service")
+    public_layout(current_page="/warranty")
     with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-4"):
-        ui.label("Service Request").classes("text-4xl font-bold")
-        ui.label("Coming soon — service ticket system.").classes("text-gray-600")
+        ui.label("Warranty").classes("text-4xl font-bold")
+        ui.label("Coming soon...").classes("text-gray-600")
 
 
 @ui.page("/amc")
@@ -70,16 +56,7 @@ def amc():
     public_layout(current_page="/amc")
     with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-4"):
         ui.label("AMC Plans").classes("text-4xl font-bold")
-        ui.label("Coming soon — AMC plans and renewals.").classes("text-gray-600")
-
-
-@ui.page("/warranty")
-def warranty():
-    from layouts.public_layout import public_layout
-    public_layout(current_page="/warranty")
-    with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-4"):
-        ui.label("Warranty Information").classes("text-4xl font-bold")
-        ui.label("Coming soon — warranty lookup and registration.").classes("text-gray-600")
+        ui.label("Coming soon...").classes("text-gray-600")
 
 
 @ui.page("/refund-policy")
@@ -88,33 +65,17 @@ def refund_policy():
     public_layout(current_page="/refund-policy")
     with ui.column().classes("w-full max-w-4xl mx-auto px-4 py-8 gap-4"):
         ui.label("Refund Policy").classes("text-3xl font-bold")
-        ui.label("This page will be updated soon. For any refund-related queries, please contact us.").classes("text-gray-600")
-        ui.link("Contact Us →", "/contact").classes("text-yellow-600 font-semibold mt-2")
+        ui.label("Coming soon...").classes("text-gray-600")
 
 
-@ui.page("/solar-panels")
-def solar_panels():
-    from layouts.public_layout import public_layout
-    public_layout(current_page="/solar-panels")
-    ui.navigate.to("/products")
-
-
-@ui.page("/solar-systems")
-def solar_systems():
-    from layouts.public_layout import public_layout
-    public_layout(current_page="/solar-systems")
-    ui.navigate.to("/products")
-
-
-# ============================================================
-# Config + Run
-# ============================================================
-
+# ---------- Config ----------
 from config.settings import settings
 
-STORAGE_SECRET = "np-power-tech-solar-dev-secret-2025-change-in-prod"
+# Enable storage for sessions
+app.storage.secret = "dev-only-secret-change-in-production-abc123"
 
 
+# ---------- Run ----------
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
         host=settings.APP_HOST,
@@ -123,5 +84,7 @@ if __name__ in {"__main__", "__mp_main__"}:
         favicon="☀️",
         reload=False,
         show=False,
-        storage_secret=STORAGE_SECRET,
+        storage_secret="dev-only-secret-change-in-production-abc123",
+        language="en",
+        viewport="width=device-width, initial-scale=1.0",
     )
