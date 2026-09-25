@@ -6,41 +6,40 @@ Main application entry point.
 from nicegui import ui, app
 
 # ---------- Import all pages (register routes) ----------
-from pages.public import home            # noqa: F401  → /
-from pages.public import about           # noqa: F401  → /about
-from pages.public import services        # noqa: F401  → /services
-from pages.public import products        # noqa: F401  → /products
-from pages.public import projects        # noqa: F401  → /projects
-from pages.public import contact         # noqa: F401  → /contact
-from pages.public import get_quote       # noqa: F401  → /get-quote
+from pages.public import home          # noqa: F401  → /
+from pages.public import about          # noqa: F401  → /about
+from pages.public import services       # noqa: F401  → /services
+from pages.public import products       # noqa: F401  → /products
+from pages.public import projects       # noqa: F401  → /projects
+from pages.public import contact        # noqa: F401  → /contact
+from pages.public import get_quote      # noqa: F401  → /get-quote
 from pages.public import solar_calculator  # noqa: F401  → /calculator
-from pages.public import faq             # noqa: F401  → /faq
-from pages.public import residential     # noqa: F401  → /residential
-from pages.public import commercial      # noqa: F401  → /commercial
-from pages.public import industrial      # noqa: F401  → /industrial
-from pages.public import on_grid         # noqa: F401  → /on-grid
-from pages.public import off_grid        # noqa: F401  → /off-grid
-from pages.public import hybrid          # noqa: F401  → /hybrid
-from pages.public import subsidy         # noqa: F401  → /subsidy
-from pages.public import pincode_check   # noqa: F401  → /pincode-check
-from pages.public import reviews         # noqa: F401  → /reviews
-from pages.public import blog            # noqa: F401  → /blog
-from pages.public import privacy_policy  # noqa: F401  → /privacy-policy
+from pages.public import faq            # noqa: F401  → /faq
+from pages.public import residential    # noqa: F401  → /residential
+from pages.public import commercial     # noqa: F401  → /commercial
+from pages.public import industrial     # noqa: F401  → /industrial
+from pages.public import on_grid        # noqa: F401  → /on-grid
+from pages.public import off_grid       # noqa: F401  → /off-grid
+from pages.public import hybrid         # noqa: F401  → /hybrid
+from pages.public import subsidy        # noqa: F401  → /subsidy
+from pages.public import pincode_check  # noqa: F401  → /pincode-check
+from pages.public import reviews        # noqa: F401  → /reviews
+from pages.public import blog           # noqa: F401  → /blog
+from pages.public import privacy_policy # noqa: F401  → /privacy-policy
 from pages.public import terms as terms_page  # noqa: F401  → /terms
 from pages.public import quotation_wizard  # noqa: F401  → /quotation-request
 from pages.public import quotation_status  # noqa: F401  → /quotation-status/{id}
-from pages.public import write_review    # noqa: F401  → /write-review
-
-# Auth + Admin pages
-from pages.auth import login             # noqa: F401  → /login
-from pages.admin import dashboard        # noqa: F401  → /admin/dashboard
-from pages.admin import quotation_review  # noqa: F401  → /admin/quotations, /admin/quotation/{id}
-from pages.admin import products as admin_products  # noqa: F401  → /admin/products
-from pages.admin import product_form as admin_product_form  # noqa: F401  → /admin/products/new, /admin/products/{id}/edit
-from pages.admin import leads as admin_leads  # noqa: F401  → /admin/leads
-from pages.admin import customers as admin_customers  # noqa: F401  → /admin/customers
-from pages.admin import reviews as admin_reviews  # noqa: F401  → /admin/reviews
-from pages.admin import uploads as admin_uploads  # noqa: F401  → /admin/uploads
+from pages.public import write_review      # noqa: F401  → /write-review
+from pages.auth import login            # noqa: F401  → /login
+from pages.admin import dashboard       # noqa: F401  → /admin/dashboard
+from pages.admin import quotation_review  # noqa: F401  → /admin/quotations
+from pages.admin import products as admin_products       # noqa: F401
+from pages.admin import product_form as admin_product_form  # noqa: F401
+from pages.admin import leads as admin_leads             # noqa: F401
+from pages.admin import customers as admin_customers     # noqa: F401
+from pages.admin import reviews as admin_reviews         # noqa: F401
+from pages.admin import uploads as admin_uploads         # noqa: F401
+from pages.admin import settings as admin_settings_page  # noqa: F401  → /admin/settings
 
 
 # ---------- Placeholder pages ----------
@@ -83,9 +82,6 @@ def refund():
 # ---------- Config ----------
 from config.settings import settings
 
-# Enable storage for sessions
-app.storage.secret = "dev-only-secret-change-in-production-abc123"
-
 
 # ---------- Run ----------
 if __name__ in {"__main__", "__mp_main__"}:
@@ -96,6 +92,7 @@ if __name__ in {"__main__", "__mp_main__"}:
         favicon="☀️",
         reload=False,
         show=False,
-        storage_secret="dev-only-secret-change-in-production-abc123",
         language="en",
+        viewport="width=device-width, initial-scale=1.0",
+        storage_secret="dev-only-secret-change-in-production-abc123",
     )

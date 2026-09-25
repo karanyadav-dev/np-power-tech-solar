@@ -16,6 +16,7 @@ NAV_ITEMS = [
     ("Products", "/admin/products", "inventory_2"),
     ("Reviews", "/admin/reviews", "star"),
     ("Uploads", "/admin/uploads", "folder"),
+    ("Settings", "/admin/settings", "settings"),
 ]
 
 
@@ -28,12 +29,9 @@ def admin_layout(current_page: str = "/admin/dashboard", page_title: str = "Admi
         ui.navigate.to("/login")
         return None
 
-    # CRITICAL: Set token in API client so all admin API calls work
+    # CRITICAL: Set token in API client for all admin pages
     from api.client import api_client
     api_client.set_token(token)
-
-    # Debug log (can remove in production)
-    print(f"[ADMIN_LAYOUT] Token set: {token[:30]}...")
 
     user = app.storage.user.get("user", {})
     full_name = user.get("fullName", "Admin")
