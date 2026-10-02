@@ -6,8 +6,8 @@ async function create(data) {
   const result = await db.query(
     `INSERT INTO reviews (
       customer_id, order_id, customer_name, customer_location,
-      rating, title, review_text, is_verified, is_published
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, FALSE)
+      rating, title, review_text, photo_urls, is_verified, is_published
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, FALSE)
     RETURNING *`,
     [
       data.customerId || null,
@@ -17,13 +17,17 @@ async function create(data) {
       data.rating,
       data.title || null,
       data.reviewText,
+      JSON.stringify(data.photoUrls || []),
     ],
   );
   return result.rows[0];
 }
 
 async function findById(id) {
-  const result = await db.query(`SELECT * FROM reviews WHERE id = $1`, [id]);
+  const result = await db.query(
+    `SELECT * FROM reviews WHERE id = $1`,
+    [id],
+  );
   return result.rows[0] || null;
 }
 
@@ -78,9 +82,11 @@ async function list({ page = 1, limit = 20, isPublished, rating }) {
 
 async function listPublic(limit = 6) {
   const result = await db.query(
-    `SELECT id, customer_name, customer_location, rating, title, review_text, created_at
-     FROM reviews WHERE is_published = TRUE
-     ORDER BY created_at DESC LIMIT $1`,
+    `SELECT id, customer_name, customer_location, rating, title, review_text, photo_urls, created_at
+     FROM reviews
+     WHERE is_published = TRUE
+     ORDER BY created_at DESC
+     LIMIT $1`,
     [limit],
   );
   return result.rows;
@@ -104,15 +110,27 @@ async function update(id, data) {
 
   params.push(id);
   const result = await db.query(
-    `UPDATE reviews SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
+    `UPDATE reviews SET ${updates.join(', ')}
+     WHERE id = $${idx}
+     RETURNING *`,
     params,
   );
   return result.rows[0] || null;
 }
 
 async function softDelete(id) {
-  const result = await db.query(`DELETE FROM reviews WHERE id = $1 RETURNING id`, [id]);
+  const result = await db.query(
+    `DELETE FROM reviews WHERE id = $1 RETURNING id`,
+    [id],
+  );
   return result.rowCount > 0;
 }
 
-module.exports = { create, findById, list, listPublic, update, softDelete };
+module.exports = {
+  create,
+  findById,
+  list,
+  listPublic,
+  update,
+  softDelete,
+};

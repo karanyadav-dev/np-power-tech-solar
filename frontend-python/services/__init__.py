@@ -7,6 +7,7 @@ from .admin_service import admin_service
 from .review_service import review_service
 from .whatsapp_service import whatsapp_service
 from .settings_service import settings_service
+from .project_service import project_service
 
 __all__ = [
     "lead_service",
@@ -17,4 +18,5 @@ __all__ = [
     "review_service",
     "whatsapp_service",
     "settings_service",
+    "project_service",
 ]

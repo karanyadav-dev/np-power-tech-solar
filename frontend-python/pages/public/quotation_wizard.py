@@ -1,12 +1,13 @@
 """
 NP POWER TECH SOLAR - Quotation Wizard (7-Step Customer Form)
-Steps:
+
+Flow:
 1. Solar Requirement
 2. Customer Info
-3. Electricity Info
-4. Bill Upload (NEW)
+3. Electricity Info + PRE-CREATE CUSTOMER
+4. Bill Upload (with customer_id)
 5. Roof Info
-6. Roof Photo Upload (NEW)
+6. Roof Photo Upload (with customer_id)
 7. Preferences + Submit
 """
 
@@ -23,6 +24,7 @@ def quotation_wizard_page():
     # Wizard state
     state = {
         "step": 1,
+        "customer_id": None,  # Pre-created after step 3
         "uploaded_files": {
             "electricity_bills": [],
             "roof_photos": [],
@@ -71,7 +73,7 @@ def quotation_wizard_page():
             "Fill this 7-step form and our team will prepare a personalized quotation for you."
         ).classes("text-gray-600")
 
-        # Progress indicator (7 steps)
+        # Progress indicator
         with ui.row().classes("w-full justify-between items-center gap-1 my-4 flex-wrap"):
             steps = ["Solar", "Contact", "Power", "Bill", "Roof", "Photos", "Review"]
             step_labels = []
@@ -93,6 +95,7 @@ def quotation_wizard_page():
                     label.classes(replace="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm bg-gray-200 text-gray-600")
 
         content = ui.column().classes("w-full gap-4")
+        result_label = ui.label("").classes("text-sm mt-4")
 
         # ---------- Step 1: Solar Requirement ----------
         def step1():
@@ -179,7 +182,7 @@ def quotation_wizard_page():
                     value=state["data"]["electricityInfo"]["connectionType"],
                 ).classes("w-full")
 
-        # ---------- Step 4: Bill Upload (NEW) ----------
+        # ---------- Step 4: Bill Upload ----------
         def step4():
             content.clear()
             with content:
@@ -187,6 +190,11 @@ def quotation_wizard_page():
                 ui.label(
                     "Optional but recommended — helps us prepare an accurate quotation."
                 ).classes("text-sm text-gray-500")
+
+                if state.get("customer_id"):
+                    ui.label(f"✅ Linked to customer (ID: {state['customer_id'][:8]}...)").classes(
+                        "text-xs text-green-600"
+                    )
 
                 def on_bill_upload(result):
                     url = result.get("data", {}).get("relativePath", "")
@@ -199,6 +207,7 @@ def quotation_wizard_page():
                     label="📄 Upload Electricity Bill (PDF or Image)",
                     accept="image/*,application/pdf",
                     max_size_mb=10,
+                    customer_id=state.get("customer_id"),
                     on_success=on_bill_upload,
                 )
 
@@ -232,7 +241,7 @@ def quotation_wizard_page():
                     value=state["data"]["roofInfo"]["additionalInfo"],
                 ).classes("w-full")
 
-        # ---------- Step 6: Roof Photo Upload (NEW) ----------
+        # ---------- Step 6: Roof Photo Upload ----------
         def step6():
             content.clear()
             with content:
@@ -240,6 +249,11 @@ def quotation_wizard_page():
                 ui.label(
                     "Upload 1-3 photos of your roof/site. This helps us design the right system."
                 ).classes("text-sm text-gray-500")
+
+                if state.get("customer_id"):
+                    ui.label(f"✅ Linked to customer (ID: {state['customer_id'][:8]}...)").classes(
+                        "text-xs text-green-600"
+                    )
 
                 def on_photo_upload(result):
                     url = result.get("data", {}).get("relativePath", "")
@@ -252,10 +266,13 @@ def quotation_wizard_page():
                     label="🏠 Upload Roof / Site Photo",
                     accept="image/*",
                     max_size_mb=10,
+                    customer_id=state.get("customer_id"),
                     on_success=on_photo_upload,
                 )
 
-                ui.label("You can upload multiple photos one by one.").classes("text-xs text-gray-400 mt-2")
+                ui.label("You can upload multiple photos one by one.").classes(
+                    "text-xs text-gray-400 mt-2"
+                )
 
         # ---------- Step 7: Preferences + Submit ----------
         def step7():
@@ -286,28 +303,53 @@ def quotation_wizard_page():
                     ui.label(f"• City: {ci['city'].value}")
                     ui.label(f"• Bill uploaded: {len(state['uploaded_files']['electricity_bills'])} file(s)")
                     ui.label(f"• Roof photos: {len(state['uploaded_files']['roof_photos'])} file(s)")
+                    if state.get("customer_id"):
+                        ui.label(f"• Customer ID: {state['customer_id']}").classes("text-xs text-green-600")
 
         # ---------- Navigation ----------
-        result_label = ui.label("").classes("text-sm mt-4")
-
         def go_next():
             if state["step"] == 1:
-                step2(); state["step"] = 2
+                step2()
+                state["step"] = 2
             elif state["step"] == 2:
                 ci = state["data"]["customerInfo"]
                 if not ci["fullName"].value or not ci["phone"].value or not ci["address"].value:
                     result_label.set_text("Please fill name, phone, and address.")
                     result_label.classes("text-red-600")
                     return
-                step3(); state["step"] = 3
+                step3()
+                state["step"] = 3
             elif state["step"] == 3:
-                step4(); state["step"] = 4
+                # PRE-CREATE CUSTOMER before uploads
+                ci = state["data"]["customerInfo"]
+                if not state["customer_id"]:
+                    pre_resp = quotation_service.pre_create_customer({
+                        "fullName": ci["fullName"].value,
+                        "phone": ci["phone"].value,
+                        "email": ci["email"].value or None,
+                        "address": ci["address"].value,
+                        "city": ci["city"].value,
+                        "state": ci["state"].value,
+                        "pincode": ci["pincode"].value,
+                        "customerType": state["data"]["solarRequirement"]["customerType"].value,
+                    })
+                    if pre_resp.get("success"):
+                        state["customer_id"] = pre_resp["data"]["id"]
+                        print(f"[WIZARD] Customer pre-created: {state['customer_id']}")
+                    else:
+                        print(f"[WIZARD] Pre-create failed: {pre_resp.get('error')}")
+                        # Continue anyway — will create on final submit
+                step4()
+                state["step"] = 4
             elif state["step"] == 4:
-                step5(); state["step"] = 5
+                step5()
+                state["step"] = 5
             elif state["step"] == 5:
-                step6(); state["step"] = 6
+                step6()
+                state["step"] = 6
             elif state["step"] == 6:
-                step7(); state["step"] = 7
+                step7()
+                state["step"] = 7
             result_label.set_text("")
             update_progress()
 
@@ -389,5 +431,6 @@ def quotation_wizard_page():
             ui.button("Next →", on_click=go_next).classes("bg-yellow-500 text-white")
             ui.button("Submit", on_click=submit).classes("bg-green-500 text-white")
 
+        # Initial render
         step1()
         update_progress()

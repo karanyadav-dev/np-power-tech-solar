@@ -63,9 +63,15 @@ const uploadFile = asyncHandler(async (req, res) => {
 const listDocuments = asyncHandler(async (req, res) => {
   const { customerId, quotationId, documentType } = req.query;
 
-  let query = `SELECT d.*, u.full_name AS uploaded_by_name
+  let query = `SELECT d.*, 
+                      u.full_name AS uploaded_by_name,
+                      c.full_name AS customer_name,
+                      c.phone AS customer_phone,
+                      c.city AS customer_city,
+                      c.email AS customer_email
                FROM documents d
                LEFT JOIN users u ON u.id = d.uploaded_by
+               LEFT JOIN customers c ON c.id = d.customer_id
                WHERE 1=1`;
   const params = [];
   let idx = 1;
@@ -89,6 +95,38 @@ const listDocuments = asyncHandler(async (req, res) => {
   return success(res, result.rows, 'Documents fetched');
 });
 
+// ---------- Link document to customer ----------
+const linkDocumentToCustomer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { customerId } = req.body;
+
+  if (!customerId) {
+    return badRequest(res, 'customerId is required');
+  }
+
+  // Verify customer exists
+  const customer = await db.query(
+    `SELECT id, full_name, phone FROM customers WHERE id = $1 AND deleted_at IS NULL`,
+    [customerId],
+  );
+
+  if (customer.rowCount === 0) {
+    return badRequest(res, 'Customer not found');
+  }
+
+  // Update document
+  const result = await db.query(
+    `UPDATE documents SET customer_id = $1 WHERE id = $2 RETURNING *`,
+    [customerId, id],
+  );
+
+  if (result.rowCount === 0) {
+    return badRequest(res, 'Document not found');
+  }
+
+  return success(res, result.rows[0], 'Document linked to customer');
+});
+
 const deleteDocument = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -103,4 +141,10 @@ const deleteDocument = asyncHandler(async (req, res) => {
   return success(res, null, 'Document deleted');
 });
 
-module.exports = { uploadMiddleware, uploadFile, listDocuments, deleteDocument };
+module.exports = {
+  uploadMiddleware,
+  uploadFile,
+  listDocuments,
+  linkDocumentToCustomer,
+  deleteDocument,
+};

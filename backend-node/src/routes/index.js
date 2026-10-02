@@ -2,6 +2,7 @@
 
 const express = require('express');
 
+// ---------- Route Imports ----------
 const authRoutes = require('./auth.routes');
 const leadRoutes = require('./lead.routes');
 const customerRoutes = require('./customer.routes');
@@ -12,12 +13,13 @@ const quotationRoutes = require('./quotation.routes');
 const uploadRoutes = require('./upload.routes');
 const reviewRoutes = require('./review.routes');
 const settingRoutes = require('./setting.routes');
-
-/**
- * API v1 router — mounts all module routes.
- */
+const projectRoutes = require('./project.routes');
 
 const router = express.Router();
+
+// ============================================================
+// API ROUTES
+// ============================================================
 
 // ---------- Auth ----------
 router.use('/auth', authRoutes);
@@ -49,8 +51,12 @@ router.use('/reviews', reviewRoutes);
 // ---------- Settings ----------
 router.use('/settings', settingRoutes);
 
-// ---------- Future modules (uncomment as implemented) ----------
-// router.use('/projects', require('./project.routes'));
+// ---------- Projects ----------
+router.use('/projects', projectRoutes);
+
+// ============================================================
+// FUTURE MODULES (uncomment when implemented)
+// ============================================================
 // router.use('/surveys', require('./survey.routes'));
 // router.use('/orders', require('./order.routes'));
 // router.use('/payments', require('./payment.routes'));

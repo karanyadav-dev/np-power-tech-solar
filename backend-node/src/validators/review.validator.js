@@ -10,6 +10,7 @@ const createReviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   title: z.string().max(255).optional().nullable(),
   reviewText: z.string().min(10).max(2000),
+  photoUrls: z.array(z.string().max(500)).optional().default([]),
   orderId: z.string().uuid().optional().nullable(),
   customerId: z.string().uuid().optional().nullable(),
 });

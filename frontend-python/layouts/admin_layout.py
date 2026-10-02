@@ -1,13 +1,27 @@
 """
 NP POWER TECH SOLAR - Admin Layout
-Sidebar + top bar with back button for all admin pages.
+Sidebar + top bar with back button + logo.
 """
 
+import base64
+from pathlib import Path
 from nicegui import ui, app
 from config.settings import settings
 
 
-# Only include pages that EXIST
+def _get_logo_base64():
+    """Read logo file and convert to base64 data URI."""
+    logo_path = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
+    if logo_path.exists():
+        try:
+            with open(logo_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("utf-8")
+            return f"data:image/png;base64,{b64}"
+        except Exception:
+            return None
+    return None
+
+
 NAV_ITEMS = [
     ("Dashboard", "/admin/dashboard", "dashboard"),
     ("Leads", "/admin/leads", "people"),
@@ -21,7 +35,7 @@ NAV_ITEMS = [
 
 
 def admin_layout(current_page: str = "/admin/dashboard", page_title: str = "Admin"):
-    """Apply admin layout with sidebar + back button."""
+    """Apply admin layout with sidebar + logo + back button."""
 
     # Auth check
     token = app.storage.user.get("access_token")
@@ -29,20 +43,27 @@ def admin_layout(current_page: str = "/admin/dashboard", page_title: str = "Admi
         ui.navigate.to("/login")
         return None
 
-    # CRITICAL: Set token in API client for all admin pages
+    # Set token in API client for all admin pages
     from api.client import api_client
     api_client.set_token(token)
 
     user = app.storage.user.get("user", {})
     full_name = user.get("fullName", "Admin")
 
+    logo_uri = _get_logo_base64()
+
     # Left sidebar
     with ui.left_drawer(value=True).classes("bg-gray-900 text-white p-0").props("width=240"):
         with ui.column().classes("w-full gap-0 h-full"):
-            # Brand
-            with ui.row().classes("items-center gap-2 p-4 border-b border-gray-700"):
-                ui.icon("solar_power", size="1.5rem").classes("text-yellow-500")
-                ui.label("Admin Panel").classes("text-lg font-bold text-white")
+            # Brand + Logo (centered, larger)
+            with ui.column().classes("items-center gap-2 p-4 border-b border-gray-700 w-full"):
+                if logo_uri:
+                    ui.html(
+                        f'<img src="{logo_uri}" style="height: 60px; width: auto; background: white; border-radius: 8px; padding: 6px;" alt="Logo" />'
+                    )
+                else:
+                    ui.icon("solar_power", size="2rem").classes("text-yellow-500")
+                ui.label("Admin Panel").classes("text-sm font-bold text-white mt-1")
 
             # Back to site button
             with ui.row().classes(
@@ -50,7 +71,7 @@ def admin_layout(current_page: str = "/admin/dashboard", page_title: str = "Admi
                 "hover:bg-gray-800 text-gray-300 border-b border-gray-700"
             ).on("click", lambda: ui.navigate.to("/")):
                 ui.icon("arrow_back", size="1.2rem")
-                ui.label("← Back to Website")
+                ui.label("Back to Website")
 
             # Navigation
             for label, path, icon in NAV_ITEMS:
@@ -90,7 +111,6 @@ def admin_layout(current_page: str = "/admin/dashboard", page_title: str = "Admi
                     "click", lambda: ui.left_drawer().toggle()
                 )
 
-                # Back button in header
                 with ui.row().classes(
                     "items-center gap-1 cursor-pointer px-2 py-1 rounded hover:bg-gray-100"
                 ).on("click", lambda: ui.navigate.to("/admin/dashboard")):

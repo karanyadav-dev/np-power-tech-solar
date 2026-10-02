@@ -1,6 +1,6 @@
 """
 NP POWER TECH SOLAR - Public Layout
-Common layout for all public-facing pages.
+Header + main content container + footer helper.
 """
 
 from pathlib import Path
@@ -9,38 +9,34 @@ from components.header import header
 from components.footer import footer
 
 
-# Load custom CSS
 CSS_FILE = Path(__file__).resolve().parent.parent / "static" / "theme.css"
 
 
 def public_layout(current_page: str = "/"):
-    """Apply public layout to the current page."""
-
-    # Load custom CSS (once)
+    """Apply public layout — header + main content container."""
+    # CSS
     if CSS_FILE.exists():
         ui.add_css(CSS_FILE.read_text(encoding="utf-8"))
 
     # SEO meta
     ui.add_head_html('''
-        <meta name="description" content="NP POWER TECH SOLAR - Complete solar solutions for homes, businesses, and industries. Get free site survey, subsidy assistance, and expert installation.">
-        <meta name="keywords" content="solar panels, solar installation, rooftop solar, PM Surya Ghar, solar subsidy, solar company India">
+        <meta name="description" content="NP POWER TECH SOLAR - Complete solar solutions for homes, businesses, and industries.">
+        <meta name="keywords" content="solar panels, solar installation, rooftop solar, PM Surya Ghar, solar subsidy">
         <meta property="og:title" content="NP POWER TECH SOLAR - Power Your Future with Solar">
-        <meta property="og:description" content="Save on electricity bills, reduce carbon footprint, and get government subsidies.">
         <meta property="og:type" content="website">
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     ''')
 
-    # Header (fixed top)
+    # Header
     header(current_page=current_page)
 
-    # Main content (padding-top to clear fixed header)
-    with ui.column().classes("w-full pt-16 md:pt-20"):
-        with ui.column().classes("w-full max-w-7xl mx-auto px-4 py-8 gap-6") as main_container:
-            pass
-
-    # Footer (normal flow — appears after all content)
-    footer()
+    # Main content container
+    main_container = ui.column().classes(
+        "w-full max-w-7xl mx-auto px-4 pt-24 pb-8 gap-6"
+    )
 
     return main_container
+
+
+def public_layout_footer():
+    """Render footer — call at end of each page."""
+    footer()

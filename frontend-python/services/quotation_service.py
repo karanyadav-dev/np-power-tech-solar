@@ -17,6 +17,15 @@ class QuotationService:
         return api_client.post("/api/v1/quotations", json=data)
 
     @staticmethod
+    def pre_create_customer(data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Pre-create customer during wizard (before uploads).
+        Called after Step 3 (electricity info) so customer_id is available
+        for subsequent file uploads (bill photo, roof photo).
+        """
+        return api_client.post("/api/v1/quotations/pre-create-customer", json=data)
+
+    @staticmethod
     def view_quotation(quotation_id: str) -> Dict[str, Any]:
         """Customer views quotation by ID (marks as viewed)."""
         return api_client.get(f"/api/v1/quotations/{quotation_id}/view")
@@ -77,6 +86,11 @@ class QuotationService:
     @staticmethod
     def send_to_customer(quotation_id: str) -> Dict[str, Any]:
         return api_client.post(f"/api/v1/quotations/{quotation_id}/send")
+
+    @staticmethod
+    def generate_pdf(quotation_id: str) -> Dict[str, Any]:
+        """Generate actual PDF file for quotation."""
+        return api_client.post(f"/api/v1/quotations/{quotation_id}/generate-pdf")
 
 
 quotation_service = QuotationService()

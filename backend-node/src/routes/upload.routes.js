@@ -7,6 +7,10 @@ const { requireRoles } = require('../middleware/rbac');
 
 const router = express.Router();
 
+// ============================================================
+// PUBLIC ROUTES
+// ============================================================
+
 // Public upload (customers can upload bill/photos without login)
 router.post(
   '/',
@@ -15,7 +19,11 @@ router.post(
   uploadController.uploadFile,
 );
 
-// Protected — list and delete (admin only)
+// ============================================================
+// PROTECTED ROUTES (admin / staff only)
+// ============================================================
+
+// List documents
 router.get(
   '/',
   authenticate,
@@ -23,6 +31,15 @@ router.get(
   uploadController.listDocuments,
 );
 
+// Link document to a customer (admin manual linking)
+router.post(
+  '/:id/link-customer',
+  authenticate,
+  requireRoles('super_admin', 'admin', 'sales_manager'),
+  uploadController.linkDocumentToCustomer,
+);
+
+// Delete document
 router.delete(
   '/:id',
   authenticate,

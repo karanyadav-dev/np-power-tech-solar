@@ -1,30 +1,55 @@
 """
-NP POWER TECH SOLAR - Header Component (Dynamic)
-Navigation header with settings-driven company name.
+NP POWER TECH SOLAR - Header Component
+Logo embedded as base64 (no path issues).
 """
 
+import base64
+from pathlib import Path
 from nicegui import ui
 from config.settings import settings
 from services.settings_service import settings_service
 
 
+def _get_logo_base64():
+    """Read logo file and convert to base64 data URI."""
+    logo_path = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
+    if logo_path.exists():
+        try:
+            with open(logo_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("utf-8")
+            return f"data:image/png;base64,{b64}"
+        except Exception:
+            return None
+    return None
+
+
 def header(current_page: str = "/"):
-    """Render the site header with dynamic company name."""
+    """Render the site header with logo on left."""
 
-    # Get company name from settings (with .env fallback)
-    company_name = settings_service.get("company_name", settings.APP_TITLE)
+    logo_uri = _get_logo_base64()
 
-    with ui.header().classes("bg-white shadow-md py-2 z-50"):
-        with ui.row().classes("w-full max-w-7xl mx-auto items-center justify-between px-4"):
-            # Logo / Brand (clickable)
-            with ui.row().classes("items-center gap-2 cursor-pointer").on(
+    with ui.header().classes("bg-white shadow-md py-3"):
+        with ui.row().classes(
+            "w-full max-w-7xl mx-auto items-center justify-between px-4 gap-4"
+        ):
+            # ---------- Logo + Brand (left) ----------
+            with ui.row().classes("items-center gap-3 cursor-pointer shrink-0").on(
                 "click", lambda: ui.navigate.to("/")
             ):
-                ui.icon("solar_power", size="2rem").classes("text-yellow-500")
-                ui.label(company_name).classes("text-xl font-bold text-gray-800")
+                if logo_uri:
+                    ui.html(
+                        f'<img src="{logo_uri}" style="height: 56px; width: auto;" alt="NP Power Tech Solar Logo" />'
+                    )
+                else:
+                    ui.icon("solar_power", size="2.5rem").classes("text-yellow-500")
 
-            # Navigation Links
-            with ui.row().classes("gap-6 items-center"):
+                company_name = settings_service.get("company_name", settings.APP_TITLE)
+                ui.label(company_name).classes(
+                    "text-lg md:text-xl font-bold text-gray-800"
+                )
+
+            # ---------- Navigation (right) ----------
+            with ui.row().classes("gap-5 items-center"):
                 nav_links = [
                     ("Home", "/"),
                     ("About", "/about"),
@@ -38,18 +63,13 @@ def header(current_page: str = "/"):
 
                 for label, path in nav_links:
                     is_active = current_page == path
-                    classes = "text-gray-800 font-medium no-underline hover:text-yellow-600"
+                    classes = "text-gray-800 font-medium no-underline hover:text-yellow-600 text-sm"
                     if is_active:
-                        classes += " border-b-2 border-yellow-500"
+                        classes += " border-b-2 border-yellow-500 pb-1"
 
                     ui.link(label, path).classes(classes)
 
-                # Login/Get Quote button
                 ui.button(
                     "Get Quote",
                     on_click=lambda: ui.navigate.to("/get-quote"),
-                ).classes("bg-yellow-500 text-white font-semibold")
-
-            # Mobile Menu Button (optional)
-            with ui.row().classes("md:hidden"):
-                ui.button(icon="menu").props("flat")
+                ).classes("bg-yellow-500 text-white font-semibold ml-2")

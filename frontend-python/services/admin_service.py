@@ -1,6 +1,6 @@
 """
 NP POWER TECH SOLAR - Admin Service
-Wraps admin-only API calls (products, reviews, uploads, stats).
+Wraps admin API calls.
 """
 
 from api.client import api_client
@@ -8,9 +8,7 @@ from typing import Dict, Any, Optional
 
 
 class AdminService:
-    """Admin operations."""
-
-    # ---------- PRODUCTS ----------
+    # PRODUCTS
     @staticmethod
     def list_products(page: int = 1, limit: int = 20, **filters) -> Dict[str, Any]:
         params = {"page": page, "limit": limit}
@@ -33,7 +31,7 @@ class AdminService:
     def delete_product(product_id: str) -> Dict[str, Any]:
         return api_client.delete(f"/api/v1/products/{product_id}")
 
-    # ---------- CATEGORIES ----------
+    # CATEGORIES
     @staticmethod
     def list_categories() -> Dict[str, Any]:
         return api_client.get("/api/v1/products/categories")
@@ -42,7 +40,7 @@ class AdminService:
     def create_category(data: Dict[str, Any]) -> Dict[str, Any]:
         return api_client.post("/api/v1/products/categories", json=data)
 
-    # ---------- REVIEWS ----------
+    # REVIEWS
     @staticmethod
     def list_reviews(page: int = 1, limit: int = 20, **filters) -> Dict[str, Any]:
         params = {"page": page, "limit": limit}
@@ -57,7 +55,7 @@ class AdminService:
     def delete_review(review_id: str) -> Dict[str, Any]:
         return api_client.delete(f"/api/v1/reviews/{review_id}")
 
-    # ---------- UPLOADS ----------
+    # UPLOADS
     @staticmethod
     def list_documents(**filters) -> Dict[str, Any]:
         return api_client.get("/api/v1/uploads", params=filters)
@@ -66,7 +64,7 @@ class AdminService:
     def delete_document(doc_id: str) -> Dict[str, Any]:
         return api_client.delete(f"/api/v1/uploads/{doc_id}")
 
-    # ---------- LEADS ----------
+    # LEADS
     @staticmethod
     def list_leads(page: int = 1, limit: int = 20, **filters) -> Dict[str, Any]:
         params = {"page": page, "limit": limit}
@@ -80,7 +78,7 @@ class AdminService:
             json={"status": status, "notes": notes},
         )
 
-    # ---------- CUSTOMERS ----------
+    # CUSTOMERS
     @staticmethod
     def list_customers(page: int = 1, limit: int = 20, **filters) -> Dict[str, Any]:
         params = {"page": page, "limit": limit}

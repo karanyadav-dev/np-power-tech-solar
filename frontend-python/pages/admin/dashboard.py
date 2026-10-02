@@ -1,9 +1,11 @@
 """
 NP POWER TECH SOLAR - Admin Dashboard
+Stats + Recent Leads.
 """
 
 from nicegui import ui, app
 from layouts.admin_layout import admin_layout
+from services.lead_service import lead_service
 from services.admin_service import admin_service
 from api.client import api_client
 
@@ -16,107 +18,105 @@ def admin_dashboard():
         return
     api_client.set_token(token)
 
+    user = app.storage.user.get("user", {})
+    full_name = user.get("fullName", "Admin")
+
     container = admin_layout(current_page="/admin/dashboard", page_title="Dashboard")
 
     with container:
-        # Welcome
-        ui.label("Welcome to Admin Dashboard").classes("text-3xl font-bold text-gray-900")
-        ui.label("Overview of your solar business").classes("text-gray-500")
+        ui.label(f"Welcome, {full_name}").classes("text-3xl font-bold")
+        ui.label("Overview of your solar business").classes("text-sm text-gray-500")
 
-        # Stats cards container (will load from API)
-        stats_container = ui.row().classes("w-full gap-4 flex-wrap mt-4")
+        # ---------- Stats Cards ----------
+        with ui.row().classes("w-full gap-4 flex-wrap mt-4"):
+            with ui.card().classes("flex-1 min-w-[200px] p-6"):
+                ui.label("Total Leads").classes("text-gray-500 text-sm")
+                leads_count = ui.label("—").classes("text-3xl font-bold text-yellow-500")
 
-        # Recent leads container
-        ui.label("Recent Leads").classes("text-2xl font-bold mt-6")
-        leads_container = ui.column().classes("w-full")
+            with ui.card().classes("flex-1 min-w-[200px] p-6"):
+                ui.label("Customers").classes("text-gray-500 text-sm")
+                customers_count = ui.label("—").classes("text-3xl font-bold text-blue-500")
 
-        def load_dashboard():
-            # ---- STATS ----
-            stats_container.clear()
+            with ui.card().classes("flex-1 min-w-[200px] p-6"):
+                ui.label("Products").classes("text-gray-500 text-sm")
+                products_count = ui.label("—").classes("text-3xl font-bold text-green-500")
 
-            # Fetch counts from APIs
-            leads_resp = admin_service.list_leads(limit=1)
-            customers_resp = admin_service.list_customers(limit=1)
-            products_resp = admin_service.list_products(limit=1)
+        # ---------- Recent Leads ----------
+        ui.label("Recent Leads").classes("text-2xl font-bold mt-8")
 
-            leads_count = leads_resp.get("data", {}).get("pagination", {}).get("total", 0) if leads_resp.get("success") else 0
-            customers_count = customers_resp.get("data", {}).get("pagination", {}).get("total", 0) if customers_resp.get("success") else 0
-            products_count = len(products_resp.get("data", [])) if products_resp.get("success") else 0
+        leads_table = ui.table(
+            columns=[
+                {"name": "lead_number", "label": "Lead #", "field": "lead_number", "align": "left"},
+                {"name": "full_name", "label": "Name", "field": "full_name", "align": "left"},
+                {"name": "phone", "label": "Phone", "field": "phone", "align": "left"},
+                {"name": "city", "label": "City", "field": "city", "align": "left"},
+                {"name": "status", "label": "Status", "field": "status", "align": "left"},
+                {"name": "created_at", "label": "Created", "field": "created_at", "align": "left"},
+            ],
+            rows=[],
+            row_key="lead_number",
+        ).classes("w-full")
 
-            with stats_container:
-                # Leads card
-                with ui.card().classes("flex-1 min-w-[200px] p-6 cursor-pointer hover:shadow-lg").on(
-                    "click", lambda: ui.navigate.to("/admin/leads")
-                ):
-                    ui.label("Total Leads").classes("text-gray-500 text-sm")
-                    ui.label(str(leads_count)).classes("text-4xl font-bold text-yellow-500 mt-2")
+    # ---------- Load Data ----------
+    def safe_count(resp):
+        """Get count from API response — handles both list and dict."""
+        if not resp or not resp.get("success"):
+            return 0
+        data = resp.get("data", [])
+        if isinstance(data, list):
+            return len(data)
+        if isinstance(data, dict):
+            return data.get("pagination", {}).get("total", 0)
+        return 0
 
-                # Customers card
-                with ui.card().classes("flex-1 min-w-[200px] p-6 cursor-pointer hover:shadow-lg").on(
-                    "click", lambda: ui.navigate.to("/admin/customers")
-                ):
-                    ui.label("Customers").classes("text-gray-500 text-sm")
-                    ui.label(str(customers_count)).classes("text-4xl font-bold text-blue-500 mt-2")
+    def safe_list(resp):
+        """Get list from API response — handles both list and dict."""
+        if not resp or not resp.get("success"):
+            return []
+        data = resp.get("data", [])
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            return data.get("data", [])
+        return []
 
-                # Products card
-                with ui.card().classes("flex-1 min-w-[200px] p-6 cursor-pointer hover:shadow-lg").on(
-                    "click", lambda: ui.navigate.to("/admin/products")
-                ):
-                    ui.label("Products").classes("text-gray-500 text-sm")
-                    ui.label(str(products_count)).classes("text-4xl font-bold text-green-500 mt-2")
+    def load_dashboard():
+        # Leads
+        try:
+            leads_resp = lead_service.list(page=1, limit=10)
+            leads_count.set_text(str(safe_count(leads_resp)))
+            leads_list = safe_list(leads_resp)
+            if leads_list:
+                leads_table.rows = [
+                    {
+                        "lead_number": str(l.get("lead_number", "")),
+                        "full_name": str(l.get("full_name", "")),
+                        "phone": str(l.get("phone", "")),
+                        "city": str(l.get("city", "") or "—"),
+                        "status": str(l.get("status", "")),
+                        "created_at": str(l.get("created_at", ""))[:19],
+                    }
+                    for l in leads_list[:10]
+                ]
+                leads_table.update()
+        except Exception as e:
+            print(f"[dashboard] leads error: {e}")
+            leads_count.set_text("0")
 
-                # Quotations card
-                quotes_resp = admin_service.list_leads(limit=1)  # placeholder — we'll add quotations count later
-                with ui.card().classes("flex-1 min-w-[200px] p-6 cursor-pointer hover:shadow-lg").on(
-                    "click", lambda: ui.navigate.to("/admin/quotations")
-                ):
-                    ui.label("Quotations").classes("text-gray-500 text-sm")
-                    ui.label("→").classes("text-4xl font-bold text-purple-500 mt-2")
+        # Customers
+        try:
+            customers_resp = admin_service.list_customers(page=1, limit=1)
+            customers_count.set_text(str(safe_count(customers_resp)))
+        except Exception as e:
+            print(f"[dashboard] customers error: {e}")
+            customers_count.set_text("0")
 
-            # ---- RECENT LEADS ----
-            leads_container.clear()
-            resp = admin_service.list_leads(limit=10)
-            leads = resp.get("data", []) if resp.get("success") else []
+        # Products
+        try:
+            products_resp = admin_service.list_products(page=1, limit=1)
+            products_count.set_text(str(safe_count(products_resp)))
+        except Exception as e:
+            print(f"[dashboard] products error: {e}")
+            products_count.set_text("0")
 
-            with leads_container:
-                if not leads:
-                    ui.label("No leads yet.").classes("text-gray-500 text-center p-8")
-                    return
-
-                rows_html = ""
-                for l in leads:
-                    rows_html += f"""
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3">{l.get('lead_number', '—')}</td>
-                        <td class="p-3">{l.get('full_name', '—')}</td>
-                        <td class="p-3">{l.get('phone', '—')}</td>
-                        <td class="p-3">{l.get('city', '—') or '—'}</td>
-                        <td class="p-3">
-                            <span class="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">
-                                {l.get('status', '—')}
-                            </span>
-                        </td>
-                        <td class="p-3 text-xs text-gray-500">{l.get('created_at', '')[:19]}</td>
-                    </tr>
-                    """
-
-                ui.html(f"""
-                <div class="overflow-x-auto rounded-lg shadow">
-                    <table class="w-full bg-white">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="p-3 text-left text-sm font-semibold">Lead #</th>
-                                <th class="p-3 text-left text-sm font-semibold">Name</th>
-                                <th class="p-3 text-left text-sm font-semibold">Phone</th>
-                                <th class="p-3 text-left text-sm font-semibold">City</th>
-                                <th class="p-3 text-left text-sm font-semibold">Status</th>
-                                <th class="p-3 text-left text-sm font-semibold">Created</th>
-                            </tr>
-                        </thead>
-                        <tbody>{rows_html}</tbody>
-                    </table>
-                </div>
-                """).classes("w-full")
-
-        # Load dashboard on start
-        ui.timer(0.5, load_dashboard, once=True)
+    ui.timer(0.3, load_dashboard, once=True)

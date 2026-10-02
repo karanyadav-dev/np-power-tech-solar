@@ -85,9 +85,13 @@ secrets/
 .env.broken
 package.json.bak
 package-lock.json.bak
-
 # ---------- Log files ----------
 *.log
 logs/
 backend-node/logs/*
 !backend-node/logs/.gitkeep
+
+# ---------- NiceGUI session storage (contains auth tokens) ----------
+frontend-python/.nicegui/
+frontend-python/.nicegui/*
+**/.nicegui/

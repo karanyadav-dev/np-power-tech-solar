@@ -30,6 +30,13 @@ router.post(
   quotationController.createRequest,
 );
 
+// Pre-create customer (for wizard step 3 → 4 flow)
+router.post(
+  '/pre-create-customer',
+  optionalAuth,
+  quotationController.preCreateCustomer,
+);
+
 router.get(
   '/:id/view',
   quotationController.markViewed,
