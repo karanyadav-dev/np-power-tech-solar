@@ -23,6 +23,14 @@ const router = express.Router();
 // PUBLIC ROUTES
 // ============================================================
 
+// Pre-create customer (after Step 2 in wizard)
+router.post(
+  '/pre-create-customer',
+  optionalAuth,
+  quotationController.preCreateCustomer,
+);
+
+// Full quotation request submission
 router.post(
   '/',
   optionalAuth,

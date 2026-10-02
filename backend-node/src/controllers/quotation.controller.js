@@ -9,6 +9,48 @@ const createRequest = asyncHandler(async (req, res) => {
   return created(res, quotation, 'Quotation request submitted successfully');
 });
 
+// ---------- Pre-create customer (Step 2) ----------
+const preCreateCustomer = asyncHandler(async (req, res) => {
+  const db = require('../config/db');
+  const { fullName, phone, whatsapp, email, address, city, state, pincode } = req.body;
+
+  if (!phone) {
+    const err = new Error('Phone is required');
+    err.code = 'PHONE_REQUIRED';
+    err.status = 400;
+    throw err;
+  }
+
+  // Check if customer exists
+  const existing = await db.query(
+    `SELECT id, full_name, phone, email FROM customers WHERE phone = $1 AND deleted_at IS NULL LIMIT 1`,
+    [phone],
+  );
+
+  if (existing.rowCount > 0) {
+    return success(res, { customer: existing.rows[0], exists: true }, 'Customer already exists');
+  }
+
+  // Create new customer (partial — will be completed on submission)
+  const result = await db.query(
+    `INSERT INTO customers (full_name, phone, whatsapp, email, address, city, state, pincode)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, full_name, phone, email`,
+    [
+      fullName || 'New Customer',
+      phone,
+      whatsapp || null,
+      email || null,
+      address || null,
+      city || null,
+      state || null,
+      pincode || null,
+    ],
+  );
+
+  return created(res, { customer: result.rows[0], exists: false }, 'Customer pre-created');
+});
+
 const listQuotations = asyncHandler(async (req, res) => {
   const result = await quotationService.listQuotations(req.query);
   return success(res, result.data, 'Quotations fetched');
@@ -97,6 +139,7 @@ const updateBankDetails = asyncHandler(async (req, res) => {
 
 module.exports = {
   createRequest,
+  preCreateCustomer,
   listQuotations,
   getQuotation,
   startReview,

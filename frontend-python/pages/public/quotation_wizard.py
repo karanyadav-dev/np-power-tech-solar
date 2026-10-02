@@ -382,10 +382,15 @@ def quotation_wizard_page():
                         "customerType": state["data"]["solarRequirement"]["customerType"].value,
                     })
                     if pre_resp.get("success"):
-                        state["customer_id"] = pre_resp["data"]["id"]
+                        # FIX: Backend returns data.customer.id
+                        customer_data = pre_resp.get("data", {}).get("customer", {})
+                        state["customer_id"] = customer_data.get("id")
                         print(f"[WIZARD] Customer pre-created: {state['customer_id']}")
                     else:
-                        print(f"[WIZARD] Pre-create failed: {pre_resp.get('error')}")
+                        err_msg = pre_resp.get("error", {}).get("message", "Unknown error")
+                        print(f"[WIZARD] Pre-create failed: {err_msg}")
+                        result_label.set_text(f"⚠️ Customer creation failed: {err_msg}")
+                        result_label.classes("text-yellow-600")
                 step4()
                 state["step"] = 4
             elif state["step"] == 4:

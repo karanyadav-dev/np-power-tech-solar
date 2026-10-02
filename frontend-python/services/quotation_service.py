@@ -12,6 +12,11 @@ class QuotationService:
 
     # ---------- Customer / Public ----------
     @staticmethod
+    def pre_create_customer(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Pre-create customer after Step 2 (before full submission)."""
+        return api_client.post("/api/v1/quotations/pre-create-customer", json=data)
+
+    @staticmethod
     def create_request(data: Dict[str, Any]) -> Dict[str, Any]:
         """Submit wizard data (public)."""
         return api_client.post("/api/v1/quotations", json=data)
@@ -87,6 +92,14 @@ class QuotationService:
     def update_bank(quotation_id: str, bank_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update bank details for quotation."""
         return api_client.patch(f"/api/v1/quotations/{quotation_id}/bank", json=bank_data)
+
+    @staticmethod
+    def upload_document(upload_type: str, file_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Upload a document for a quotation."""
+        return api_client.post(
+            "/api/v1/uploads",
+            json={"uploadType": upload_type, **file_data},
+        )
 
 
 # Singleton
