@@ -46,6 +46,14 @@ const preferencesSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
 });
 
+// Step 6 (NEW): Bank Details
+const bankDetailsSchema = z.object({
+  bankName: z.string().max(100).optional().nullable(),
+  bankAccountNo: z.string().max(50).optional().nullable(),
+  bankIfsc: z.string().max(20).optional().nullable(),
+  bankBranch: z.string().max(100).optional().nullable(),
+});
+
 // Complete wizard submission
 const createQuotationRequestSchema = z.object({
   solarRequirement: solarRequirementSchema,
@@ -53,6 +61,7 @@ const createQuotationRequestSchema = z.object({
   electricityInfo: electricityInfoSchema,
   roofInfo: roofInfoSchema,
   preferences: preferencesSchema,
+  bankDetails: bankDetailsSchema.optional().nullable(),
 });
 
 // Admin review — mark information status
@@ -91,6 +100,14 @@ const approveQuotationSchema = z.object({
   notes: z.string().max(1000).optional().nullable(),
 });
 
+// Admin — update bank details
+const updateBankDetailsSchema = z.object({
+  bankName: z.string().max(100).optional().nullable(),
+  bankAccountNo: z.string().max(50).optional().nullable(),
+  bankIfsc: z.string().max(20).optional().nullable(),
+  bankBranch: z.string().max(100).optional().nullable(),
+});
+
 // Customer — accept / reject
 const customerResponseSchema = z.object({
   action: z.enum(['accept', 'reject']),
@@ -113,6 +130,7 @@ module.exports = {
   requestInfoSchema,
   configurePricingSchema,
   approveQuotationSchema,
+  updateBankDetailsSchema,
   customerResponseSchema,
   listQuotationsQuerySchema,
 };

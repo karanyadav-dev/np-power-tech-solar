@@ -1,6 +1,6 @@
 """
 NP POWER TECH SOLAR - Admin Quotations
-List + Detail + Review actions with new admin layout.
+List + Detail + Review actions + Bank edit + WhatsApp.
 """
 
 from nicegui import ui, app
@@ -199,6 +199,67 @@ def admin_quotation_detail(quotation_id: str):
                                 "text-xl font-bold text-green-600 mt-2"
                             )
 
+                # ---------- BANK DETAILS SECTION (NEW) ----------
+                with ui.card().classes("w-full p-5 bg-blue-50 border-2 border-blue-200"):
+                    ui.label("Bank Details for this Quotation").classes("text-lg font-bold text-blue-800")
+                    ui.label(
+                        "Ye details PDF mein dikhengi. Agar khaali chhodo toh company ki default bank details use hongi."
+                    ).classes("text-xs text-gray-600 mb-3")
+
+                    bank_name = ui.input(
+                        "Bank Name",
+                        value=q.get("bank_name") or "",
+                    ).classes("w-full").props("outlined dense")
+
+                    bank_acc = ui.input(
+                        "Account Number",
+                        value=q.get("bank_account_no") or "",
+                    ).classes("w-full").props("outlined dense")
+
+                    bank_ifsc = ui.input(
+                        "IFSC Code",
+                        value=q.get("bank_ifsc") or "",
+                    ).classes("w-full").props("outlined dense")
+
+                    bank_branch = ui.input(
+                        "Branch Name",
+                        value=q.get("bank_branch") or "",
+                    ).classes("w-full").props("outlined dense")
+
+                    def save_bank():
+                        resp = api_client.patch(
+                            f"/api/v1/quotations/{quotation_id}/bank",
+                            json={
+                                "bankName": bank_name.value or None,
+                                "bankAccountNo": bank_acc.value or None,
+                                "bankIfsc": bank_ifsc.value or None,
+                                "bankBranch": bank_branch.value or None,
+                            },
+                        )
+                        if resp.get("success"):
+                            ui.notify("Bank details saved", type="positive")
+                            refresh()
+                        else:
+                            err = resp.get("error", {}).get("message", "Failed")
+                            ui.notify(f"Failed: {err}", type="negative")
+
+                    with ui.row().classes("gap-3 mt-3"):
+                        ui.button(
+                            "Save Bank Details",
+                            on_click=save_bank,
+                        ).classes("bg-blue-500 text-white font-semibold").style("color: white !important;")
+
+                        ui.button(
+                            "Clear (use default)",
+                            on_click=lambda: (
+                                setattr(bank_name, "value", ""),
+                                setattr(bank_acc, "value", ""),
+                                setattr(bank_ifsc, "value", ""),
+                                setattr(bank_branch, "value", ""),
+                                save_bank(),
+                            ),
+                        ).props("outline").classes("border-gray-400 text-gray-600")
+
                 # ---------- PDF / WhatsApp Section ----------
                 if q.get("pdf_url"):
                     with ui.card().classes("w-full p-5 bg-green-50 border-2 border-green-300"):
@@ -220,7 +281,7 @@ def admin_quotation_detail(quotation_id: str):
                             ui.button(
                                 "Send on WhatsApp",
                                 on_click=lambda: ui.run_javascript(f'window.open("{wa_link}", "_blank")'),
-                            ).classes("bg-green-500 text-white font-semibold")
+                            ).classes("bg-green-500 text-white font-semibold").style("color: white !important;")
 
                             ui.button(
                                 "Preview PDF",
@@ -244,7 +305,7 @@ def admin_quotation_detail(quotation_id: str):
                         ui.button(
                             "Generate PDF",
                             on_click=lambda: generate_pdf(),
-                        ).classes("bg-yellow-500 text-white mt-2")
+                        ).classes("bg-yellow-500 text-white mt-2").style("color: white !important;")
 
                 # ---------- Action Functions ----------
                 def generate_pdf():
@@ -289,30 +350,30 @@ def admin_quotation_detail(quotation_id: str):
                             ui.button(
                                 "Start Review",
                                 on_click=lambda: do_action(quotation_service.start_review, quotation_id, label="Review started"),
-                            ).classes("bg-yellow-500 text-white")
+                            ).classes("bg-yellow-500 text-white").style("color: white !important;")
                         if status == "ADMIN_REVIEW":
                             ui.button(
                                 "Verify Info",
                                 on_click=lambda: do_action(quotation_service.verify_info, quotation_id, label="Verified"),
-                            ).classes("bg-green-500 text-white")
+                            ).classes("bg-green-500 text-white").style("color: white !important;")
                         if status == "VERIFIED":
                             ui.button(
                                 "Configure Pricing",
                                 on_click=lambda: ui.navigate.to(f"/admin/quotation/{quotation_id}/pricing"),
-                            ).classes("bg-blue-500 text-white")
+                            ).classes("bg-blue-500 text-white").style("color: white !important;")
                         if status == "PENDING_APPROVAL":
                             ui.button(
                                 "Approve",
                                 on_click=lambda: do_action(quotation_service.approve, quotation_id, label="Approved"),
-                            ).classes("bg-green-600 text-white")
+                            ).classes("bg-green-600 text-white").style("color: white !important;")
                         if status == "APPROVED":
                             ui.button(
                                 "Generate PDF", on_click=generate_pdf
-                            ).classes("bg-purple-500 text-white")
+                            ).classes("bg-purple-500 text-white").style("color: white !important;")
                         if status == "PDF_GENERATED":
                             ui.button(
                                 "Send to Customer",
                                 on_click=lambda: do_action(quotation_service.send_to_customer, quotation_id, label="Sent"),
-                            ).classes("bg-orange-500 text-white")
+                            ).classes("bg-orange-500 text-white").style("color: white !important;")
 
         ui.timer(0.3, refresh, once=True)

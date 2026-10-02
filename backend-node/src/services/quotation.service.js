@@ -1,6 +1,7 @@
 'use strict';
 
 const quotationModel = require('../models/quotation.model');
+const db = require('../config/db');
 
 /**
  * Quotation business logic.
@@ -137,7 +138,6 @@ async function approveQuotation(id, userId, notes) {
     throw err;
   }
 
-  // Simulate PDF generation (mark as PDF_GENERATED after approval)
   const updated = await quotationModel.updateStatus(id, 'APPROVED', userId, notes || 'Admin approved');
   return updated;
 }
@@ -153,8 +153,6 @@ async function markPdfGenerated(id, pdfUrl, userId) {
     throw err;
   }
 
-  // Update PDF URL in DB
-  // (we'll extend model if needed, but for now just change status)
   return quotationModel.updateStatus(id, 'PDF_GENERATED', userId, `PDF generated at ${pdfUrl}`);
 }
 
@@ -205,6 +203,42 @@ async function customerResponse(id, action, reason) {
   return result.rows[0];
 }
 
+// ---------- Admin: Update bank details ----------
+async function updateBankDetails(id, bankData) {
+  // Ensure quotation exists
+  const existing = await quotationModel.findById(id);
+  if (!existing) {
+    const err = new Error('Quotation not found');
+    err.code = 'QUOTATION_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  const result = await db.query(
+    `UPDATE quotations
+     SET bank_name = $1, bank_account_no = $2, bank_ifsc = $3, bank_branch = $4,
+         updated_at = NOW()
+     WHERE id = $5 AND deleted_at IS NULL
+     RETURNING id, quotation_number, bank_name, bank_account_no, bank_ifsc, bank_branch`,
+    [
+      bankData.bankName || null,
+      bankData.bankAccountNo || null,
+      bankData.bankIfsc || null,
+      bankData.bankBranch || null,
+      id,
+    ],
+  );
+
+  if (result.rowCount === 0) {
+    const err = new Error('Quotation not found');
+    err.code = 'QUOTATION_NOT_FOUND';
+    err.status = 404;
+    throw err;
+  }
+
+  return result.rows[0];
+}
+
 module.exports = {
   createRequest,
   getQuotation,
@@ -218,4 +252,5 @@ module.exports = {
   sendToCustomer,
   markViewed,
   customerResponse,
+  updateBankDetails,
 };

@@ -7,12 +7,12 @@ const quotationController = require('../controllers/quotation.controller');
 const { validate } = require('../middleware/validate');
 const { authenticate, optionalAuth } = require('../middleware/auth');
 const { requireRoles } = require('../middleware/rbac');
-const db = require('../config/db');
 const {
   createQuotationRequestSchema,
   requestInfoSchema,
   configurePricingSchema,
   approveQuotationSchema,
+  updateBankDetailsSchema,
   customerResponseSchema,
   listQuotationsQuerySchema,
 } = require('../validators/quotation.validator');
@@ -30,13 +30,6 @@ router.post(
   quotationController.createRequest,
 );
 
-// Pre-create customer (for wizard step 3 → 4 flow)
-router.post(
-  '/pre-create-customer',
-  optionalAuth,
-  quotationController.preCreateCustomer,
-);
-
 router.get(
   '/:id/view',
   quotationController.markViewed,
@@ -48,51 +41,40 @@ router.post(
   quotationController.customerResponse,
 );
 
-// ============================================================
-// PUBLIC PDF DOWNLOAD
-// ============================================================
-
+// ---------- PUBLIC PDF download ----------
 router.get('/:id/pdf/download', async (req, res) => {
   try {
+    const db = require('../config/db');
     const result = await db.query(
-      `SELECT pdf_url, quotation_number FROM quotations WHERE id = $1`,
+      `SELECT pdf_url FROM quotations WHERE id = $1`,
       [req.params.id],
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'QUOTATION_NOT_FOUND', message: 'Quotation not found' },
-      });
-    }
-
-    const pdfUrl = result.rows[0].pdf_url;
-    if (!pdfUrl) {
+    if (result.rowCount === 0 || !result.rows[0].pdf_url) {
       return res.status(404).json({
         success: false,
         error: { code: 'PDF_NOT_FOUND', message: 'PDF not generated yet' },
       });
     }
 
-    // Convert /uploads/xxx to filesystem path
+    const pdfUrl = result.rows[0].pdf_url;
     const relativePath = pdfUrl.replace(/^\/uploads\//, '');
     const filePath = path.join(__dirname, '..', '..', '..', 'storage', 'uploads', relativePath);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
         success: false,
-        error: { code: 'FILE_NOT_FOUND', message: 'PDF file missing on disk' },
+        error: { code: 'FILE_NOT_FOUND', message: 'PDF file missing' },
       });
     }
 
-    const filename = path.basename(filePath);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Content-Disposition', `inline; filename="${path.basename(filePath)}"`);
     fs.createReadStream(filePath).pipe(res);
   } catch (err) {
     res.status(500).json({
       success: false,
-      error: { code: 'PDF_DOWNLOAD_ERROR', message: err.message },
+      error: { code: 'PDF_ERROR', message: err.message },
     });
   }
 });
@@ -174,6 +156,15 @@ router.post(
   authenticate,
   requireRoles('super_admin', 'admin', 'sales_manager'),
   quotationController.sendToCustomer,
+);
+
+// Update bank details for a quotation
+router.patch(
+  '/:id/bank',
+  authenticate,
+  requireRoles('super_admin', 'admin', 'sales_manager'),
+  validate({ body: updateBankDetailsSchema }),
+  quotationController.updateBankDetails,
 );
 
 module.exports = router;

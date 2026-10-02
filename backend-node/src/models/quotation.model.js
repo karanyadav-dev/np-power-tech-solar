@@ -5,6 +5,7 @@ const db = require('../config/db');
 /**
  * Quotation model — parameterized queries only.
  * NEVER logs pricing details.
+ * Supports per-quotation bank details.
  */
 
 // ---------- Generate unique quotation number ----------
@@ -19,7 +20,7 @@ async function generateQuotationNumber() {
   return result.rows[0].next_number;
 }
 
-// ---------- Create quotation request ----------
+// ---------- Create quotation request (WITH bank details) ----------
 async function create(data) {
   const quotationNumber = await generateQuotationNumber();
 
@@ -38,7 +39,6 @@ async function create(data) {
 
     if (existingCustomer.rowCount > 0) {
       customerId = existingCustomer.rows[0].id;
-      // Update customer with latest info
       await client.query(
         `UPDATE customers
          SET full_name = $1, whatsapp = COALESCE($2, whatsapp),
@@ -66,7 +66,7 @@ async function create(data) {
       customerId = newCust.rows[0].id;
     }
 
-    // 2. Ensure lead exists (auto-create from quotation request)
+    // 2. Ensure lead exists
     const existingLead = await client.query(
       `SELECT id FROM leads WHERE phone = $1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1`,
       [cust.phone],
@@ -101,17 +101,23 @@ async function create(data) {
       leadId = newLead.rows[0].id;
     }
 
-    // 3. Create quotation
+    // 3. Create quotation WITH bank details
+    const bank = data.bankDetails || {};
     const quotationResult = await client.query(
       `INSERT INTO quotations (
         quotation_number, customer_id, lead_id, system_size_kw, system_type,
+        bank_name, bank_account_no, bank_ifsc, bank_branch,
         status, notes
-      ) VALUES ($1, $2, $3, $4, $5, 'CUSTOMER_SUBMITTED', $6)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'CUSTOMER_SUBMITTED', $10)
       RETURNING *`,
       [
         quotationNumber, customerId, leadId,
         data.solarRequirement.systemSizeKw,
         data.solarRequirement.systemType,
+        bank.bankName || null,
+        bank.bankAccountNo || null,
+        bank.bankIfsc || null,
+        bank.bankBranch || null,
         JSON.stringify({
           solarRequirement: data.solarRequirement,
           electricityInfo: data.electricityInfo,
@@ -123,7 +129,7 @@ async function create(data) {
 
     const quotation = quotationResult.rows[0];
 
-    // 4. Create initial version snapshot
+    // 4. Initial version snapshot
     await client.query(
       `INSERT INTO quotation_versions (quotation_id, version, snapshot, change_reason)
        VALUES ($1, 1, $2, 'Initial customer submission')`,
@@ -133,6 +139,7 @@ async function create(data) {
         electricityInfo: data.electricityInfo,
         roofInfo: data.roofInfo,
         preferences: data.preferences,
+        bankDetails: bank,
       })],
     );
 
@@ -218,7 +225,7 @@ async function list({ page = 1, limit = 20, status, customerId, leadId, search }
   };
 }
 
-// ---------- Update status (with history) ----------
+// ---------- Update status ----------
 async function updateStatus(id, newStatus, changedBy, notes = null) {
   const client = await db.getClient();
   try {
@@ -240,7 +247,6 @@ async function updateStatus(id, newStatus, changedBy, notes = null) {
       [newStatus, id],
     );
 
-    // Log in quotation_versions table as status snapshot
     await client.query(
       `INSERT INTO quotation_versions (quotation_id, version, snapshot, changed_by, change_reason)
        VALUES (
@@ -266,23 +272,39 @@ async function updateStatus(id, newStatus, changedBy, notes = null) {
   }
 }
 
+// ---------- Update bank details ----------
+async function updateBankDetails(id, bank) {
+  const result = await db.query(
+    `UPDATE quotations
+     SET bank_name = $1, bank_account_no = $2, bank_ifsc = $3, bank_branch = $4,
+         updated_at = NOW()
+     WHERE id = $5 AND deleted_at IS NULL
+     RETURNING id, bank_name, bank_account_no, bank_ifsc, bank_branch`,
+    [
+      bank.bankName || null,
+      bank.bankAccountNo || null,
+      bank.bankIfsc || null,
+      bank.bankBranch || null,
+      id,
+    ],
+  );
+  return result.rows[0] || null;
+}
+
 // ---------- Save admin pricing configuration ----------
 async function savePricing(id, pricing, changedBy) {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
 
-    // Calculate totals
     const subtotal = pricing.items.reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
     const discount = pricing.discount || 0;
     const gstAmount = ((subtotal - discount) * (pricing.gstPercentage || 18)) / 100;
     const subsidyAmount = pricing.subsidyAmount || 0;
     const finalAmount = subtotal - discount + gstAmount - subsidyAmount;
 
-    // Delete old items (if revising)
     await client.query(`DELETE FROM quotation_items WHERE quotation_id = $1`, [id]);
 
-    // Insert new items
     for (const item of pricing.items) {
       await client.query(
         `INSERT INTO quotation_items (quotation_id, item_name, description, quantity, unit, unit_price, total_price)
@@ -295,7 +317,6 @@ async function savePricing(id, pricing, changedBy) {
       );
     }
 
-    // Update quotation
     const validUntil = new Date(Date.now() + (pricing.validUntilDays || 30) * 24 * 60 * 60 * 1000);
     const result = await client.query(
       `UPDATE quotations
@@ -313,7 +334,6 @@ async function savePricing(id, pricing, changedBy) {
       ],
     );
 
-    // Save version snapshot
     await client.query(
       `INSERT INTO quotation_versions (quotation_id, version, snapshot, changed_by, change_reason)
        VALUES (
@@ -373,6 +393,7 @@ module.exports = {
   findById,
   list,
   updateStatus,
+  updateBankDetails,
   savePricing,
   getItems,
   getVersions,

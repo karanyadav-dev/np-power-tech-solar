@@ -1,5 +1,5 @@
 """
-NP POWER TECH SOLAR - Quotation Wizard (7-Step Customer Form)
+NP POWER TECH SOLAR - Quotation Wizard (8-Step Customer Form)
 
 Flow:
 1. Solar Requirement
@@ -8,7 +8,8 @@ Flow:
 4. Bill Upload (with customer_id)
 5. Roof Info
 6. Roof Photo Upload (with customer_id)
-7. Preferences + Submit
+7. Bank Details (optional)
+8. Preferences + Submit
 """
 
 from nicegui import ui
@@ -24,7 +25,7 @@ def quotation_wizard_page():
     # Wizard state
     state = {
         "step": 1,
-        "customer_id": None,  # Pre-created after step 3
+        "customer_id": None,
         "uploaded_files": {
             "electricity_bills": [],
             "roof_photos": [],
@@ -60,6 +61,12 @@ def quotation_wizard_page():
                 "roofOwnership": "",
                 "additionalInfo": "",
             },
+            "bankDetails": {
+                "bankName": "",
+                "bankAccountNo": "",
+                "bankIfsc": "",
+                "bankBranch": "",
+            },
             "preferences": {
                 "financingRequired": False,
                 "notes": "",
@@ -70,15 +77,15 @@ def quotation_wizard_page():
     with ui.column().classes("w-full max-w-4xl mx-auto px-4 py-8 gap-6"):
         ui.label("Request a Solar Quotation").classes("text-4xl font-bold text-gray-900")
         ui.label(
-            "Fill this 7-step form and our team will prepare a personalized quotation for you."
+            "Fill this 8-step form and our team will prepare a personalized quotation for you."
         ).classes("text-gray-600")
 
-        # Progress indicator
+        # Progress indicator (8 steps)
         with ui.row().classes("w-full justify-between items-center gap-1 my-4 flex-wrap"):
-            steps = ["Solar", "Contact", "Power", "Bill", "Roof", "Photos", "Review"]
+            steps = ["Solar", "Contact", "Power", "Bill", "Roof", "Photos", "Bank", "Review"]
             step_labels = []
             for i, name in enumerate(steps, 1):
-                with ui.column().classes("items-center gap-1 flex-1 min-w-[70px]"):
+                with ui.column().classes("items-center gap-1 flex-1 min-w-[60px]"):
                     label = ui.label(str(i)).classes(
                         "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
                     )
@@ -274,11 +281,49 @@ def quotation_wizard_page():
                     "text-xs text-gray-400 mt-2"
                 )
 
-        # ---------- Step 7: Preferences + Submit ----------
+        # ---------- Step 7: Bank Details (optional) ----------
         def step7():
             content.clear()
             with content:
-                ui.label("Step 7: Final Details").classes("text-2xl font-bold")
+                ui.label("Step 7: Bank Details (Optional)").classes("text-2xl font-bold")
+                ui.label(
+                    "Ye details PDF quotation mein dikhengi. Agar aap skip karte ho, toh "
+                    "company ki default bank details use hongi."
+                ).classes("text-sm text-gray-500")
+
+                state["data"]["bankDetails"]["bankName"] = ui.input(
+                    "Bank Name (e.g., SBI, HDFC)",
+                    value=state["data"]["bankDetails"]["bankName"],
+                    placeholder="SBI BANK",
+                ).classes("w-full").props("outlined")
+                state["data"]["bankDetails"]["bankAccountNo"] = ui.input(
+                    "Account Number",
+                    value=state["data"]["bankDetails"]["bankAccountNo"],
+                    placeholder="44941015635",
+                ).classes("w-full").props("outlined")
+                state["data"]["bankDetails"]["bankIfsc"] = ui.input(
+                    "IFSC Code",
+                    value=state["data"]["bankDetails"]["bankIfsc"],
+                    placeholder="SBIN0031042",
+                ).classes("w-full").props("outlined")
+                state["data"]["bankDetails"]["bankBranch"] = ui.input(
+                    "Branch Name",
+                    value=state["data"]["bankDetails"]["bankBranch"],
+                    placeholder="GOVINDGARH",
+                ).classes("w-full").props("outlined")
+
+                with ui.card().classes("w-full p-4 bg-yellow-50 mt-3"):
+                    ui.label("ℹ️  Note").classes("text-sm font-bold text-yellow-800")
+                    ui.label(
+                        "Ye optional hai. Agar aap apni bank details daalenge, toh PDF mein "
+                        "aapki details dikhengi (payment ke liye). Warna company ki default bank details use hongi."
+                    ).classes("text-xs text-gray-700")
+
+        # ---------- Step 8: Preferences + Submit ----------
+        def step8():
+            content.clear()
+            with content:
+                ui.label("Step 8: Final Details").classes("text-2xl font-bold")
                 state["data"]["preferences"]["financingRequired"] = ui.checkbox(
                     "Do you need financing/loan assistance?",
                     value=state["data"]["preferences"]["financingRequired"],
@@ -293,6 +338,7 @@ def quotation_wizard_page():
 
                 sol = state["data"]["solarRequirement"]
                 ci = state["data"]["customerInfo"]
+                bd = state["data"]["bankDetails"]
 
                 with ui.column().classes("gap-1"):
                     ui.label(f"• System Size: {sol['systemSizeKw'].value} kW")
@@ -303,6 +349,8 @@ def quotation_wizard_page():
                     ui.label(f"• City: {ci['city'].value}")
                     ui.label(f"• Bill uploaded: {len(state['uploaded_files']['electricity_bills'])} file(s)")
                     ui.label(f"• Roof photos: {len(state['uploaded_files']['roof_photos'])} file(s)")
+                    bank_info = bd["bankName"].value or "Company default"
+                    ui.label(f"• Bank: {bank_info}")
                     if state.get("customer_id"):
                         ui.label(f"• Customer ID: {state['customer_id']}").classes("text-xs text-green-600")
 
@@ -338,7 +386,6 @@ def quotation_wizard_page():
                         print(f"[WIZARD] Customer pre-created: {state['customer_id']}")
                     else:
                         print(f"[WIZARD] Pre-create failed: {pre_resp.get('error')}")
-                        # Continue anyway — will create on final submit
                 step4()
                 state["step"] = 4
             elif state["step"] == 4:
@@ -350,6 +397,9 @@ def quotation_wizard_page():
             elif state["step"] == 6:
                 step7()
                 state["step"] = 7
+            elif state["step"] == 7:
+                step8()
+                state["step"] = 8
             result_label.set_text("")
             update_progress()
 
@@ -366,6 +416,8 @@ def quotation_wizard_page():
                 step5(); state["step"] = 5
             elif state["step"] == 7:
                 step6(); state["step"] = 6
+            elif state["step"] == 8:
+                step7(); state["step"] = 7
             result_label.set_text("")
             update_progress()
 
@@ -374,6 +426,7 @@ def quotation_wizard_page():
             ci = state["data"]["customerInfo"]
             ei = state["data"]["electricityInfo"]
             ri = state["data"]["roofInfo"]
+            bd = state["data"]["bankDetails"]
             pr = state["data"]["preferences"]
 
             payload = {
@@ -406,6 +459,12 @@ def quotation_wizard_page():
                     "buildingType": ri["buildingType"].value,
                     "roofOwnership": ri["roofOwnership"].value,
                     "additionalInfo": ri["additionalInfo"].value or None,
+                },
+                "bankDetails": {
+                    "bankName": bd["bankName"].value or None,
+                    "bankAccountNo": bd["bankAccountNo"].value or None,
+                    "bankIfsc": bd["bankIfsc"].value or None,
+                    "bankBranch": bd["bankBranch"].value or None,
                 },
                 "preferences": {
                     "financingRequired": bool(pr["financingRequired"].value),
